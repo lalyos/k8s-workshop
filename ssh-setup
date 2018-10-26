@@ -1,0 +1,29 @@
+# kubectl run sshfront --image=eu.gcr.io/cloud-tool/workshop --serviceaccount=config-reader -- sleep 9999
+# kubectl expose deployment sshfront --port=2222 --type=NodePort 
+# kubectl exec -it sshfront-64b47b5556-ff8nf bash
+## ssh  user2@35.198.118.25 -p 30982
+
+apk add -U curl bash
+curl -LO https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl \
+   && chmod +x ./kubectl \
+   && mv ./kubectl /usr/local/bin/kubectl
+
+curl -L https://github.com/gliderlabs/sshfront/releases/download/v0.2.1/sshfront_0.2.1_Linux_x86_64.tgz| tar -xz -C /usr/local/bin
+
+cat > ssh-auth.sh << "EOF"
+#!/bin/bash
+user=$1
+key=$2
+kubectl get configmaps ssh -n $user -o jsonpath='{.data.key}' | grep "${key}" &> /dev/null
+EOF
+
+cat > debug.sh << "EOF"
+#!/bin/bash
+
+echo === USER: $USER
+kubectl exec -it $(kubectl get po -l run=${USER} -o jsonpath='{.items[0].metadata.name}') -- bash
+EOF
+
+chmod +x *.sh
+
+sshfront -p 2222 -e -a=ssh-auth.sh  $PWD/debug.sh

@@ -1,0 +1,13 @@
+################################################################################
+# Welcome to the k8s workshop
+#
+# workshop files are available in: $HOME/workshop
+# available tools: curl, tmux, vim, git, jq, bash_completion, dig
+# if you are unfamiliar with vi, use micro (https://github.com/zyedidia/micro)
+#
+# NodePort type services are availabe on $EXTERNAL ip
+# You can use ssh to connect. Run the function: ssh-pubkey.
+#
+# start with:
+#   kubectl config get-contexts
+################################################################################
