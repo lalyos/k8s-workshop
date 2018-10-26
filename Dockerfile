@@ -5,7 +5,7 @@ RUN apt-get -qq update; apt-get install -y \
   git \
   jq \
   bash-completion \
-  dnsutils
+  dnsutils \
   net-tools \
   unzip \
   tmux \
