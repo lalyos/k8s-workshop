@@ -13,7 +13,10 @@ where participants can `kubectl` right away, "no-installation-needed"
 - sample git repo pre-pulled into $HOME
 - KUBECONFIG set up to own namespaces with token and server ca.pem set
 
-For instant `kubectl` access, browser based connectivity is provided. Under the hood bash is shared via a websocket [yudai/gotty](https://github.com/yudai/gotty
+For instant `kubectl` access, browser based connectivity is provided. Under the hood bash is shared via a websocket [yudai/gotty](https://github.com/yudai/gotty)
+. 
+
+See the [last section](#tldr) for different access methods.
 
 ## Usage
 
@@ -64,10 +67,40 @@ $ presenter
 
 There are various ways for participants to work with the k8s cluster:
 
+- kubectl from **laptop**
+  - **pros:**
+    - own/custom editor
+    - own/custom key-bindings
+  - **cons:**
+    - win/osx/linux differences
+    - potential network/proxy/firewall issues
+    - time consuming for first-time users (upto 30 minutes)
+- **ssh** into k8s nodes:
+  - **pros:**
+    - no-install-needed
+    - simple concept
+  - **cons:**
+    - turnkey solutions (gke/aks/eks) can use esoteric/readonly os
+    - ssh password/key setup
+    - potential network/proxy/firewall issues
+    - hard to scale/assign (5 nodes / 20 participants)
+- **ssh** into non-k8s VMs:
+  - **pros:**
+    - no-install-needed
+    - easier to scale
+    - can use different node-type cpu/mem
+    - preemptible/spot instances to save $
+  - **cons:**
+    - CluserIp unreachable
+    - potential network/proxy/firewall issues
+    - lots of ssh accounts to manage
+    - ansible or similar tool needed
+- **browser** connection to a container:
+  - **pros:**
+    - absolutely no install needed
+    - easy to scale
+    - instant access
+    - no ssh password/key sharing needed
+  - **cons:**
+    - key-bindings can be confusing
 
-| Method  | Pros | Cons |
-| ------------- | ------------- | ------------- |
-| kubectl from laptop | custom editor/shell/keybindings | win/osx/linux differences, time consuming, network/proxy/firewall |
-| ssh into k8s worker | no-install-needed | ssh password/key setup, network/proxy/firewall |
-| ssh into external VMs | no-install-needed | _same as above_ CluserIp unreachable |
-| browser based | no-install-needed, no ssh password/key issues, no network issues | key-bindings can be confusing |
