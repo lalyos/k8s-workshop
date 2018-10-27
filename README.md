@@ -67,7 +67,8 @@ $ presenter
 
 There are various ways for participants to work with the k8s cluster:
 
-- kubectl from **laptop**
+### Method-1: kubectl from **laptop**
+
   - **pros:**
     - own/custom editor
     - own/custom key-bindings
@@ -75,7 +76,9 @@ There are various ways for participants to work with the k8s cluster:
     - win/osx/linux differences
     - potential network/proxy/firewall issues
     - time consuming for first-time users (upto 30 minutes)
-- **ssh** into k8s nodes:
+
+### Method-2: **ssh** into k8s nodes:
+
   - **pros:**
     - no-install-needed
     - simple concept
@@ -84,7 +87,8 @@ There are various ways for participants to work with the k8s cluster:
     - ssh password/key setup
     - potential network/proxy/firewall issues
     - hard to scale/assign (5 nodes / 20 participants)
-- **ssh** into non-k8s VMs:
+
+### Method-3: **ssh** into non-k8s VMs:
   - **pros:**
     - no-install-needed
     - easier to scale
@@ -95,7 +99,8 @@ There are various ways for participants to work with the k8s cluster:
     - potential network/proxy/firewall issues
     - lots of ssh accounts to manage
     - ansible or similar tool needed
-- **browser** connection to a container:
+
+### Method-4: **browser** connection to a container:
   - **pros:**
     - absolutely no install needed
     - easy to scale
