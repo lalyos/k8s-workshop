@@ -1,7 +1,7 @@
 [![](https://images.microbadger.com/badges/image/lalyos/k8s-workshop.svg)](https://microbadger.com/images/lalyos/k8s-workshop "Get your own image badge on microbadger.com")
 [![Docker Automated build](https://img.shields.io/docker/automated/lalyos/k8s-workshop.svg)](https://hub.docker.com/r/lalyos/k8s-workshop/)
 
-Base image for k8s workshops. The main idee to provide an environment
+Base image for k8s workshops. The main idea is to provide an environment
 where participants can `kubectl` right away, "no-installation-needed"
 
 - each user has its own namespace
@@ -13,10 +13,9 @@ where participants can `kubectl` right away, "no-installation-needed"
 - sample git repo pre-pulled into $HOME
 - KUBECONFIG set up to own namespaces with token and server ca.pem set
 
-For instant `kubectl` access, browser based connectivity is provided. Under the hood bash is shared via a websocket [yudai/gotty](https://github.com/yudai/gotty)
-. 
+For instant `kubectl` access a browser based connectivity is provided. Under the hood bash is shared via a websocket, based on: [yudai/gotty](https://github.com/yudai/gotty).
 
-See the [last section](#tldr) for different access methods.
+See the [last section](#tldr) for explanation about different access methods, and why the browser based is preferred. Please note, that while browser based is poreferable for first-time users, adiitional ssh access can be easily provided. See [sshfront](https://github.com/lalyos/k8s-sshfront)
 
 ## Usage
 
@@ -72,6 +71,7 @@ There are various ways for participants to work with the k8s cluster:
   - **pros:**
     - own/custom editor
     - own/custom key-bindings
+    - no "vi freak-out"
   - **cons:**
     - win/osx/linux differences
     - potential network/proxy/firewall issues
@@ -83,6 +83,7 @@ There are various ways for participants to work with the k8s cluster:
     - no-install-needed
     - simple concept
   - **cons:**
+    - potential "vi freak-out"
     - turnkey solutions (gke/aks/eks) can use esoteric/readonly os
     - ssh password/key setup
     - potential network/proxy/firewall issues
@@ -95,6 +96,7 @@ There are various ways for participants to work with the k8s cluster:
     - can use different node-type cpu/mem
     - preemptible/spot instances to save $
   - **cons:**
+    - potential "vi freak-out"
     - CluserIp unreachable
     - potential network/proxy/firewall issues
     - lots of ssh accounts to manage
@@ -109,3 +111,4 @@ There are various ways for participants to work with the k8s cluster:
   - **cons:**
     - key-bindings can be confusing
 
+Please note, that while browser based is poreferable for first-time users, adiitional ssh access can be easily provided. See [sshfront](https://github.com/lalyos/k8s-sshfront)
