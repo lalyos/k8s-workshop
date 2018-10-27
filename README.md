@@ -15,7 +15,13 @@ where participants can `kubectl` right away, "no-installation-needed"
 
 For instant `kubectl` access a browser based connectivity is provided. Under the hood bash is shared via a websocket, based on: [yudai/gotty](https://github.com/yudai/gotty).
 
-See the [last section](#tldr) for explanation about different access methods, and why the browser based is preferred. Please note, that while browser based is poreferable for first-time users, adiitional ssh access can be easily provided. See [sshfront](https://github.com/lalyos/k8s-sshfront)
+See the [last section](#tldr) for explanation about different access methods, and why the browser based is preferred. Please note, that while browser based is poreferable for first-time users, additional ssh access can be easily provided. See [sshfront](https://github.com/lalyos/k8s-sshfront)
+
+## Roadmap
+
+- [ ] Add browser based editor. Possible [zed](https://chrome.google.com/webstore/detail/zed-code-editor/pfmjnmeipppmcebplngmhfkleiinphhp?hl=en)
+- [ ] Record sessions (presenter/participant): ttyrec/ascicast
+- [ ] Persistent storage on VPC
 
 ## Usage
 
