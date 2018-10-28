@@ -30,6 +30,35 @@ common-env() {
   printenv | grep CM_
 }
 
+zed-usage() {
+  cat <<USAGE
+###########################################
+# - install as a Chrome App:
+#  https://chrome.google.com/webstore/detail/zed-code-editor/pfmjnmeipppmcebplngmhfkleiinphhp?hl=en
+# 
+# - click on "Remote Folder"
+###########################################
+USAGE
+  ZED_USAGE_SHOWN=1
+}
+
+zed() {
+  if pgrep zed &> /dev/null; then
+    echo zed is already running, to stop: pkill zed
+    return
+  fi
+
+  [[ "$ZED_USAGE_SHOWN" ]] || zed-usage
+
+  if ! [[ "$CM_ZED" ]]; then
+    echo 'CM_ZED env variable is required. Use: common-env'
+    return
+  fi
+
+  zedrem -u $CM_ZED &
+}
+
 cd
 
-cat /etc/motd
+alias motd='cat /etc/motd'
+motd

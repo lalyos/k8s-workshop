@@ -10,6 +10,9 @@
 #
 # helper functions:
 #   common-env - imports common env variables set by presenter
+#   zed - [experimantal] editing files in this session remotely in a browser
+#   zed-usage - instructions about installing the zed chrome app
+#   motd - Message Of The Day (displays this help text)
 #
 # start with:
 #   kubectl config get-contexts
