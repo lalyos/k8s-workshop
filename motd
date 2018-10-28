@@ -8,6 +8,9 @@
 # NodePort type services are availabe on $EXTERNAL ip
 # You can use ssh to connect. Run the function: ssh-pubkey.
 #
+# helper functions:
+#   common-env - imports common env variables set by presenter
+#
 # start with:
 #   kubectl config get-contexts
 ################################################################################

@@ -21,6 +21,15 @@ USAGE
   fi
 }
 
+list-common-env() {
+  kubectl get configmaps -n default common -o go-template='{{range $k,$v := .data}}{{printf "export CM_%s=%s\n" $k $v}}{{end}}'
+}
+
+common-env() {
+  eval $(list-common-env)
+  printenv | grep CM_
+}
+
 cd
 
 cat /etc/motd
