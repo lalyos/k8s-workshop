@@ -173,6 +173,7 @@ spec:
         - gotty
         - "-w"
         - "-r"
+        - "--title-format=${name}"
         #- tmux
         - bash
         env:
