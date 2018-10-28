@@ -113,6 +113,7 @@ namespace() {
     assign-role-to-ns ${namespace} | kubectl create -f -
 
     kubectl create clusterrolebinding crb-${namespace} --clusterrole=lister --serviceaccount=${namespace}:sa-${namespace}
+    kubectl create clusterrolebinding crb-cc-${namespace} --clusterrole=common-config --serviceaccount=${namespace}:sa-${namespace}
     
     #ca=$(kubectl config view --minify --flatten -o jsonpath='{.clusters[0].cluster.certificate-authority-data}')
     ca=$(kubectl config view --minify --flatten -o go-template='{{ index (index .clusters 0).cluster "certificate-authority-data" }}')
@@ -246,6 +247,15 @@ init() {
         --verb=get,list,watch \
         --resource=nodes,namespaces
     fi
+
+    if ! kubectl get clusterrole common-config &> /dev/null; then
+      kubectl create clusterrole common-config \
+        --verb=list,get,watch \
+        --resource=configmaps \
+        --resource-name=common
+    fi
+    
+    
 }
 
 main() {
