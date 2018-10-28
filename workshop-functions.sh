@@ -229,7 +229,7 @@ get-url() {
 }
 
 init() {
-    : ${USER_EMAIL:=gipszlyakab@gmail.com}
+    : ${USER_EMAIL:=$(gcloud auth list --format="value(account)" --filter=status:ACTIV)}
     if ! kubectl get clusterrolebinding cluster-admin-binding &> /dev/null; then
       kubectl create clusterrolebinding cluster-admin-binding \
         --clusterrole cluster-admin \
