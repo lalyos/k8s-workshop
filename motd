@@ -10,6 +10,7 @@
 #
 # helper functions:
 #   common-env - imports common env variables set by presenter
+#   ssh-pubkey - sets up ssh access to this session
 #   zed - [experimantal] editing files in this session remotely in a browser
 #   zed-usage - instructions about installing the zed chrome app
 #   motd - Message Of The Day (displays this help text)

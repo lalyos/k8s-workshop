@@ -13,12 +13,16 @@ ssh-pubkey() {
 Configures ssh public key from stdin or github
 usage:
   ${FUNCNAME[0]} <GITHUB_USERNAME>
-  <SOME_COMMAND> | ${FUNCNAME[0]}
+or
+  <SOME_COMMAND_PRINTS_PUBKEY> | ${FUNCNAME[0]}
 USAGE
+      return
     fi
   else
     kubectl create configmap ssh --from-literal="key=$(cat)"  --dry-run -o yaml | kubectl apply -f -  
   fi
+
+  echo -e "You can now connect via:\n  ssh ${NS}@${CM_SSH_DOMAIN} -p ${CM_SSH_PORT}"
 }
 
 list-common-env() {
