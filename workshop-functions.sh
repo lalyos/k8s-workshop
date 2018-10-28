@@ -176,6 +176,8 @@ spec:
         #- tmux
         - bash
         env:
+          - name: NS
+            value: ${name} 
           - name: TERM
             value: xterm
           - name: KUBECONFIG
