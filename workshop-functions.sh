@@ -80,7 +80,10 @@ config-reader-token() {
   #kubectl create serviceaccount config-reader
   #kubectl create clusterrolebinding crb-config-reader --clusterrole=config-reader --serviceaccount=default:config-reader
   #kubectl create clusterrolebinding crb-config-reader-full --clusterrole=cluster-admin --serviceaccount=default:config-reader
-  ca=$(kubectl config view --minify --flatten -o jsonpath='{.clusters[0].cluster.certificate-authority-data}')
+
+  #ca=$(kubectl config view --minify --flatten -o jsonpath='{.clusters[0].cluster.certificate-authority-data}')
+  ca=$(kubectl config view --minify --flatten -o go-template='{{ index (index .clusters 0).cluster "certificate-authority-data" }}')
+
   apiserver=$(kubectl get svc kubernetes -o jsonpath='{.spec.clusterIP}')
   ns-config default $ca $(token default config-reader) ${apiserver}
 }
@@ -111,7 +114,9 @@ namespace() {
 
     kubectl create clusterrolebinding crb-${namespace} --clusterrole=lister --serviceaccount=${namespace}:sa-${namespace}
     
-    ca=$(kubectl config view --minify --flatten -o jsonpath='{.clusters[0].cluster.certificate-authority-data}')
+    #ca=$(kubectl config view --minify --flatten -o jsonpath='{.clusters[0].cluster.certificate-authority-data}')
+    ca=$(kubectl config view --minify --flatten -o go-template='{{ index (index .clusters 0).cluster "certificate-authority-data" }}')
+
     token=$(token ${namespace})
     kubectl create secret generic ${namespace} --from-file=config.yaml=<(ns-config ${namespace} $ca $token)
 }
