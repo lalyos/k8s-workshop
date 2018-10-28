@@ -105,6 +105,17 @@ token() {
        | base64 $BASE64_OPTIONS
 }
 
+## kubectl wait isnt available with v1.10
+wait-for-deployment() {
+  declare deployment=${1}
+  : ${deployment:? required}
+
+  while ! [[ 1 -eq $(kubectl get deployments ${deployment} -o jsonpath='{.status.readyReplicas}' 2> /dev/null) ]]; do
+    echo -n .
+    sleep 1
+  done
+}
+
 namespace() {
     declare namespace=${1}
     : ${namespace:? required}
@@ -201,7 +212,8 @@ dev() {
     namespace ${namespace}
     depl ${namespace}| kubectl create -f - 
 
-    #get-url ${namespace} 
+    wait-for-deployment ${namespace}
+    get-url ${namespace} 
 }
 
 presenter() {
