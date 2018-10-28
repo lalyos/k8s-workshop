@@ -27,6 +27,8 @@ RUN curl -LO https://github.com/simeji/jid/releases/download/0.7.2/jid_linux_amd
   && unzip jid_linux_amd64.zip \
   && mv jid_linux_amd64 /usr/local/bin/jid
 
+RUN curl -Lo /usr/local/bin/zedrem https://github.com/lalyos/zedrem/releases/download/latest/zedrem-linux \
+  && chmod +x /usr/local/bin/zedrem 
 RUN kubectl completion bash > /etc/bash_completion.d/kubectl
 ADD motd /etc/motd
 ADD bash_aliases /root/.bash_aliases
