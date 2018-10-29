@@ -63,6 +63,6 @@ zed() {
 }
 
 cd
-
+common-env &> /dev/null
 alias motd='cat /etc/motd'
 motd
