@@ -1,5 +1,7 @@
 #!/bin/bash
 
+WORKING_NS="default"
+
 assign-role-to-ns() {
   declare desc="creates namespace restricted serviceaccount"
   declare namespace=${1}
@@ -84,7 +86,7 @@ config-reader-token() {
   #ca=$(kubectl config view --minify --flatten -o jsonpath='{.clusters[0].cluster.certificate-authority-data}')
   ca=$(kubectl config view --minify --flatten -o go-template='{{ index (index .clusters 0).cluster "certificate-authority-data" }}')
 
-  apiserver=$(kubectl get svc kubernetes -o jsonpath='{.spec.clusterIP}')
+  apiserver=$(kubectl get svc kubernetes -n $WORKING_NS -o jsonpath='{.spec.clusterIP}')
   ns-config default $ca $(token default config-reader) ${apiserver}
 }
 
@@ -110,7 +112,7 @@ wait-for-deployment() {
   declare deployment=${1}
   : ${deployment:? required}
 
-  while ! [[ 1 -eq $(kubectl get deployments ${deployment} -o jsonpath='{.status.readyReplicas}' 2> /dev/null) ]]; do
+  while ! [[ 1 -eq $(kubectl get deployments -n $WORKING_NS ${deployment} -o jsonpath='{.status.readyReplicas}' 2> /dev/null) ]]; do
     echo -n .
     sleep 1
   done
@@ -130,8 +132,8 @@ namespace() {
     ca=$(kubectl config view --minify --flatten -o go-template='{{ index (index .clusters 0).cluster "certificate-authority-data" }}')
 
     token=$(token ${namespace})
-    apiserver=$(kubectl get svc kubernetes -o jsonpath='{.spec.clusterIP}')
-    kubectl create secret generic ${namespace} --from-file=config.yaml=<(ns-config ${namespace} $ca $token $apiserver)
+    apiserver=$(kubectl get svc -n $WORKING_NS kubernetes -o jsonpath='{.spec.clusterIP}')
+    kubectl create -n $WORKING_NS secret generic ${namespace} --from-file=config.yaml=<(ns-config ${namespace} $ca $token $apiserver)
 }
 
 depl() {
@@ -210,32 +212,32 @@ EOF
 }
 
 dev() {
-    declare namespace=${1}
+    declare namespace=${1} gitrepo=${2:-https://github.com/ContainerSolutions/ws-kubernetes-essentials-app.git}
     : ${namespace:? required}
     
     namespace ${namespace}
-    depl ${namespace}| kubectl create -f - 
+    depl ${namespace} ${gitrepo}| kubectl create -n $WORKING_NS -f -
 
     wait-for-deployment ${namespace}
     get-url ${namespace} 
 }
 
 presenter() {
-   local pod=$(kubectl get po -l run=user0 -o jsonpath='{.items[0].metadata.name}')
+   local pod=$(kubectl get po -n $WORKING_NS -l run=user0 -o jsonpath='{.items[0].metadata.name}')
    #kubectl exec -t $pod -- tmux new-session -s delme -d  2>/dev/null
-   kubectl exec -it $pod -- tmux new-session -A -s presenter
+   kubectl exec -n $WORKING_NS -it $pod -- tmux new-session -A -s presenter
 }
 
 presenter-url() {
-    if ! kubectl get svc presenter &> /dev/null; then
+    if ! kubectl get svc -n $WORKING_NS presenter &> /dev/null; then
       local pod=$(kubectl get po -l run=user0 -o jsonpath='{.items[0].metadata.name}')
       #kubectl exec -it $pod -- bash -c "gotty -p 8888 tmux attach -r -t presenter &"
-      kubectl exec -it $pod -- bash -c "nohup /usr/local/bin/gotty -p 8888 tmux attach -r -t presenter &"
+      kubectl exec -n $WORKING_NS -it $pod -- bash -c "nohup /usr/local/bin/gotty -p 8888 tmux attach -r -t presenter &"
       kubectl expose deployment user0 --port 8888 --type=NodePort --name presenter
     fi
 
    externalip=$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type == "ExternalIP")].address}') 
-   kubectl get svc presenter -o jsonpath="open http://${externalip}:{.spec.ports[0].nodePort}"
+   kubectl get svc -n $WORKING_NS presenter -o jsonpath="[presenter] open http://${externalip}:{.spec.ports[0].nodePort}"
    echo
 }
 
@@ -243,10 +245,10 @@ get-url() {
     declare deployment=${1}
 
     : ${deployment:? required}
-    pod=$(kubectl get po -lrun=${deployment} -o jsonpath='{.items[0].metadata.name}')
-    rndPath=$(kubectl logs ${pod} |sed -n '/HTTP server is listening at/ s/.*:8080//p')
+    pod=$(kubectl get po -n $WORKING_NS -lrun=${deployment} -o jsonpath='{.items[0].metadata.name}')
+    rndPath=$(kubectl logs -n $WORKING_NS ${pod} |sed -n '/HTTP server is listening at/ s/.*:8080//p')
     externalip=$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type == "ExternalIP")].address}') 
-    kubectl get svc ${deployment} -o jsonpath="open http://${externalip}:{.spec.ports[0].nodePort}${rndPath}"
+    kubectl get svc -n $WORKING_NS ${deployment} -o jsonpath="[${deployment}] open http://${externalip}:{.spec.ports[0].nodePort}${rndPath}"
     echo
 }
 
