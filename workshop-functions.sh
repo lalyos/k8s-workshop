@@ -47,7 +47,7 @@ EOF
 }
 
 ns-config() {
-  declare namespace=${1} ca=${2} token=${3} server=${4:-kubernetes}
+  declare namespace=${1} ca=${2} token=${3} server=${4:-kubernetes.default.svc.cluster.local}
   : ${namespace:? required}
   : ${ca:? required}
   : ${token:? required}
@@ -130,7 +130,8 @@ namespace() {
     ca=$(kubectl config view --minify --flatten -o go-template='{{ index (index .clusters 0).cluster "certificate-authority-data" }}')
 
     token=$(token ${namespace})
-    kubectl create secret generic ${namespace} --from-file=config.yaml=<(ns-config ${namespace} $ca $token)
+    apiserver=$(kubectl get svc kubernetes -o jsonpath='{.spec.clusterIP}')
+    kubectl create secret generic ${namespace} --from-file=config.yaml=<(ns-config ${namespace} $ca $token $apiserver)
 }
 
 depl() {
