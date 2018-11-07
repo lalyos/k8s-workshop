@@ -168,7 +168,7 @@ presenter-url() {
     if ! kubectl get svc presenter &> /dev/null; then
       local pod=$(kubectl get po -l run=user0 -o jsonpath='{.items[0].metadata.name}')
       #kubectl exec -it $pod -- bash -c "gotty -p 8888 tmux attach -r -t presenter &"
-      kubectl exec -it $pod -- bash -c "nohup /usr/local/bin/gotty -p 8888 tmux attach -r -t presenter &"
+      kubectl exec -it $pod -- bash -c "nohup /usr/local/bin/gotty -p 8888 --title-format=presenter tmux attach -r -t presenter &"
       kubectl expose deployment user0 --port 8888 --type=NodePort --name presenter
     fi
 
