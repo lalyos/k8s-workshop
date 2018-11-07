@@ -4,15 +4,15 @@ assign-role-to-ns() {
   declare desc="creates namespace restricted serviceaccount"
   declare namespace=${1}
   : ${namespace:? required}
+  : ${workshopNamespace:? required}
 
-  saNamespace=default
   cat << EOF
 ---
 apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: sa-${namespace}
-  namespace: ${saNamespace}
+  namespace: ${workshopNamespace}
 ---
 kind: Role
 apiVersion: rbac.authorization.k8s.io/v1beta1
@@ -38,7 +38,7 @@ metadata:
 subjects:
 - kind: ServiceAccount
   name: sa-${namespace}
-  namespace: ${saNamespace}
+  namespace: ${workshopNamespace}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
@@ -60,12 +60,12 @@ wait-for-deployment() {
 namespace() {
     declare namespace=${1}
     : ${namespace:? required}
+    : ${workshopNamespace:? required}
 
     kubectl create ns ${namespace}
     assign-role-to-ns ${namespace} | kubectl create -f -
 
-    saNamespace=default
-    kubectl create clusterrolebinding crb-${namespace} --clusterrole=lister --serviceaccount=${saNamespace}:sa-${namespace}
+    kubectl create clusterrolebinding crb-${namespace} --clusterrole=lister --serviceaccount=${workshopNamespace}:sa-${namespace}
     kubectl create clusterrolebinding crb-cc-${namespace} --clusterrole=common-config --serviceaccount=${namespace}:sa-${namespace}
     
 }
@@ -178,11 +178,16 @@ get-url() {
 }
 
 init() {
-    : ${USER_EMAIL:=$(gcloud auth list --format="value(account)" --filter=status:ACTIV)}
+    : ${userEmail:=$(gcloud auth list --format="value(account)" --filter=status:ACTIV 2>/dev/null)}
+    : ${workshopNamespace:=workshop}
+    : ${gitrepo:=https://github.com/ContainerSolutions/ws-kubernetes-essentials-app.git}
+
+   workshop-context 
+
     if ! kubectl get clusterrolebinding cluster-admin-binding &> /dev/null; then
       kubectl create clusterrolebinding cluster-admin-binding \
         --clusterrole cluster-admin \
-        --user ${USER_EMAIL}
+        --user ${userEmail}
      fi
 
     if ! kubectl get clusterrole lister &> /dev/null; then
@@ -197,8 +202,24 @@ init() {
         --resource=configmaps \
         --resource-name=common
     fi
-    
-    
+}
+workshop-context() {
+  : ${workshopNamespace:? required}
+
+  if [[ "$KUBECONFIG" == "$PWD/config-workshop.yaml" ]]; then
+    echo "---> workshop context already set. To return to original context:"
+    echo "--->   export KUBECONFIG=$PWD/config-orig.yaml"
+    return
+  fi
+  kubectl config view --minify --flatten > config-orig.yaml
+  kubectl create ns ${workshopNamespace} 
+  cp config-orig.yaml config-workshop.yaml 
+  export KUBECONFIG=$PWD/config-workshop.yaml
+  kubectl config set-context $(kubectl config current-context) --namespace=${workshopNamespace}
+  echo "---> context set to use namespace: ${workshopNamespace}, by:"
+  echo "export KUBECONFIG=$KUBECONFIG"
+}
+
 }
 
 main() {
