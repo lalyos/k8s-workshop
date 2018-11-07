@@ -13,12 +13,16 @@ kind: ServiceAccount
 metadata:
   name: sa-${namespace}
   namespace: ${workshopNamespace}
+  labels:
+    user: "${namespace}"
 ---
 kind: Role
 apiVersion: rbac.authorization.k8s.io/v1beta1
 metadata:
   name: role-${namespace}
   namespace: ${namespace}
+  labels:
+    user: "${namespace}"
 rules:
 - apiGroups: ["", "extensions", "apps", "autoscaling"]
   resources: ["*"]
@@ -35,6 +39,8 @@ apiVersion: rbac.authorization.k8s.io/v1beta1
 metadata:
   name: rb-${namespace}
   namespace: ${namespace}
+  labels:
+    user: "${namespace}"
 subjects:
 - kind: ServiceAccount
   name: sa-${namespace}
@@ -63,10 +69,13 @@ namespace() {
     : ${workshopNamespace:? required}
 
     kubectl create ns ${namespace}
+    kubectl label ns ${namespace} user=${namespace} 
     assign-role-to-ns ${namespace} | kubectl create -f -
 
     kubectl create clusterrolebinding crb-${namespace} --clusterrole=lister --serviceaccount=${workshopNamespace}:sa-${namespace}
+    kubectl label clusterrolebinding crb-${namespace} user=${namespace} 
     kubectl create clusterrolebinding crb-cc-${namespace} --clusterrole=common-config --serviceaccount=${namespace}:sa-${namespace}
+    kubectl label clusterrolebinding crb-cc-${namespace} user=${namespace} 
     
 }
 
@@ -82,6 +91,7 @@ apiVersion: apps/v1beta1
 kind: Deployment
 metadata:
   labels:
+    user: "${namespace}"
     run: ${name}
   name: ${name}
 spec:
@@ -123,6 +133,7 @@ apiVersion: v1
 kind: Service
 metadata:
   labels:
+    user: "${namespace}"
     run: ${name}
   name: ${name}
 spec:
@@ -220,6 +231,11 @@ workshop-context() {
   echo "export KUBECONFIG=$KUBECONFIG"
 }
 
+clean-user() { 
+    ns=$1;
+    : ${ns:?required};
+
+    kubectl delete  ns,sa,clusterrolebinding,deployment,svc -l user=${ns}
 }
 
 main() {
