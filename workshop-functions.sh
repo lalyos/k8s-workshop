@@ -5,14 +5,14 @@ assign-role-to-ns() {
   declare namespace=${1}
   : ${namespace:? required}
 
+  saNamespace=default
   cat << EOF
 ---
 apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: sa-${namespace}
-  namespace: ${namespace}
-
+  namespace: ${saNamespace}
 ---
 kind: Role
 apiVersion: rbac.authorization.k8s.io/v1beta1
@@ -38,71 +38,12 @@ metadata:
 subjects:
 - kind: ServiceAccount
   name: sa-${namespace}
-  namespace: ${namespace}
+  namespace: ${saNamespace}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
   name: role-${namespace}
 EOF
-}
-
-ns-config() {
-  declare namespace=${1} ca=${2} token=${3} server=${4:-kubernetes}
-  : ${namespace:? required}
-  : ${ca:? required}
-  : ${token:? required}
-
-    cat << EOF
-apiVersion: v1
-clusters:
-- cluster:
-    server: https://${server}
-    certificate-authority-data: ${ca}
-  name: lokal
-contexts:
-- context:
-    cluster: lokal
-    namespace: ${namespace}
-    user: default
-  name: default
-current-context: default
-kind: Config
-preferences: {}
-users:
-- name: default
-  user:
-    token: ${token}
-EOF
-}
-
-config-reader-token() {
-  #kubectl create clusterrole config-reader --resource=configmaps --verb=*
-  #kubectl create serviceaccount config-reader
-  #kubectl create clusterrolebinding crb-config-reader --clusterrole=config-reader --serviceaccount=default:config-reader
-  #kubectl create clusterrolebinding crb-config-reader-full --clusterrole=cluster-admin --serviceaccount=default:config-reader
-
-  #ca=$(kubectl config view --minify --flatten -o jsonpath='{.clusters[0].cluster.certificate-authority-data}')
-  ca=$(kubectl config view --minify --flatten -o go-template='{{ index (index .clusters 0).cluster "certificate-authority-data" }}')
-
-  apiserver=$(kubectl get svc kubernetes -o jsonpath='{.spec.clusterIP}')
-  ns-config default $ca $(token default config-reader) ${apiserver}
-}
-
-token() {
-    declare namespace=${1} serviceAccount=${2}
-    : ${namespace:? required}
-    : ${serviceAccount:=sa-${namespace}}
-
-    if [[ "Darwin" == $(uname) ]]; then
-      BASE64_OPTIONS="-D"
-    else 
-      BASE64_OPTIONS="-d"
-    fi
-
-    kubectl get secrets \
-      -n ${namespace} \
-      -o jsonpath="{.items[?(@.metadata.annotations['kubernetes\.io/service-account\.name'] == '${serviceAccount}' )].data.token}" \
-       | base64 $BASE64_OPTIONS
 }
 
 ## kubectl wait isnt available with v1.10
@@ -123,14 +64,10 @@ namespace() {
     kubectl create ns ${namespace}
     assign-role-to-ns ${namespace} | kubectl create -f -
 
-    kubectl create clusterrolebinding crb-${namespace} --clusterrole=lister --serviceaccount=${namespace}:sa-${namespace}
+    saNamespace=default
+    kubectl create clusterrolebinding crb-${namespace} --clusterrole=lister --serviceaccount=${saNamespace}:sa-${namespace}
     kubectl create clusterrolebinding crb-cc-${namespace} --clusterrole=common-config --serviceaccount=${namespace}:sa-${namespace}
     
-    #ca=$(kubectl config view --minify --flatten -o jsonpath='{.clusters[0].cluster.certificate-authority-data}')
-    ca=$(kubectl config view --minify --flatten -o go-template='{{ index (index .clusters 0).cluster "certificate-authority-data" }}')
-
-    token=$(token ${namespace})
-    kubectl create secret generic ${namespace} --from-file=config.yaml=<(ns-config ${namespace} $ca $token)
 }
 
 depl() {
@@ -138,9 +75,6 @@ depl() {
   : ${namespace:? required}
   : ${gitrepo:=https://github.com/ContainerSolutions/ws-kubernetes-essentials-app.git}
 
-  local secret="${namespace}"
-  #local number="${namespace#user}"
-  #local name="dev${number}"
   local name=${namespace}
 
 cat <<EOF
@@ -160,10 +94,8 @@ spec:
       labels:
         run: ${name}
     spec:
+      serviceAccountName: sa-${name}
       volumes:
-        - name: k8sconfig
-          secret:
-            secretName: ${secret}
         - name: gitrepo
           gitRepo:
             repository: ${gitrepo}
@@ -181,13 +113,9 @@ spec:
             value: ${name} 
           - name: TERM
             value: xterm
-          - name: KUBECONFIG
-            value: /root/.sa/config.yaml
         image: lalyos/k8s-workshop
         name: dev
         volumeMounts:
-          - mountPath: /root/.sa
-            name: k8sconfig
           - mountPath: /root/workshop
             name: gitrepo 
 ---

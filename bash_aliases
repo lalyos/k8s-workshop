@@ -64,5 +64,9 @@ zed() {
 
 cd
 common-env &> /dev/null
+
+kubectl config set-context default --namespace=$NS
+kubectl config use-context default
+
 alias motd='cat /etc/motd'
 motd
