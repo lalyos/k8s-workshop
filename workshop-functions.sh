@@ -220,8 +220,6 @@ workshop-context() {
   echo "export KUBECONFIG=$KUBECONFIG"
 }
 
-}
-
 main() {
   : DEBUG=1
   init
