@@ -63,6 +63,7 @@ namespace() {
     : ${workshopNamespace:? required}
 
     kubectl create ns ${namespace}
+    kubectl create rolebinding helmWorkaroundRoleBinding --clusterrole=admin --serviceaccount=${namespace}:default --namespace=${namespace}
     assign-role-to-ns ${namespace} | kubectl create -f -
 
     kubectl create clusterrolebinding crb-${namespace} --clusterrole=lister --serviceaccount=${workshopNamespace}:sa-${namespace}
