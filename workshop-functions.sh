@@ -49,6 +49,22 @@ roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
   name: role-${namespace}
+---
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1beta1
+metadata:
+  name: rb-def-${namespace}
+  namespace: ${namespace}
+  labels:
+    user: "${namespace}"
+subjects:
+- kind: ServiceAccount
+  name: default
+  namespace: ${mamespace}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: role-${namespace}
 EOF
 }
 
@@ -120,6 +136,8 @@ spec:
         - bash
         env:
           - name: NS
+            value: ${name}
+          - name: TILLER_NAMESPACE
             value: ${name} 
           - name: NODE
             valueFrom:
