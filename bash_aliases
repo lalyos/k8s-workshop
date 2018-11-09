@@ -1,5 +1,7 @@
 export EXTERNAL=$(curl -s http://metadata/computeMetadata/v1beta1/instance/network-interfaces/0/access-configs/0/external-ip)
 
+export NODE_IP=$(kubectl get no $NODE -o jsonpath='{.status.addresses[1].address}')
+
 . /etc/bash_completion
 
 ssh-pubkey() {

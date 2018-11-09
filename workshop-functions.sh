@@ -121,6 +121,14 @@ spec:
         env:
           - name: NS
             value: ${name} 
+          - name: NODE
+            valueFrom:
+              fieldRef:
+                fieldPath: spec.nodeName
+          - name: SA
+            valueFrom:
+              fieldRef:
+                fieldPath: spec.serviceAccountName
           - name: TERM
             value: xterm
         image: lalyos/k8s-workshop
