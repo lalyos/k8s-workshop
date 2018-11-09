@@ -110,6 +110,8 @@ spec:
         #- tmux
         - bash
         env:
+          - name: TILLER_NAMESPACE
+            value: ${name}
           - name: NS
             value: ${name} 
           - name: TERM
