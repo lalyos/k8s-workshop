@@ -95,6 +95,17 @@ namespace() {
     
 }
 
+enable-namespaces() {
+  if ! kubectl get validatingwebhookconfiguration workshopnamespacevalidator -o name 2> /dev/null ;then
+    kubectl apply -f https://raw.githubusercontent.com/lalyos/k8s-ns-admission/master/deploy-webhook-job.yaml 
+  fi 
+  kubectl patch clusterrole lister --patch='{"rules":[{"apiGroups":[""],"resources":["nodes","namespaces"],"verbs":["*"]}]}'
+}
+
+disable-namespaces() {
+  kubectl patch clusterrole lister --patch='{"rules":[{"apiGroups":[""],"resources":["nodes","namespaces"],"verbs":["get","list","watch"]}]} '
+}
+
 depl() {
   declare namespace=${1}
   : ${namespace:? required}
@@ -178,6 +189,12 @@ dev() {
     : ${namespace:? required}
     
     namespace ${namespace}
+    namespace ${namespace}play
+    kubectl create rolebinding crb-${namespace}-x \
+      --role=role-${namespace}play \
+      --namespace=${namespace}play \
+      --serviceaccount=default:sa-${namespace}
+
     depl ${namespace}| kubectl create -f - 
 
     wait-for-deployment ${namespace}
