@@ -236,7 +236,8 @@ init() {
     : ${workshopNamespace:=workshop}
     : ${gitrepo:=https://github.com/ContainerSolutions/ws-kubernetes-essentials-app.git}
 
-   workshop-context 
+    workshop-context
+    init-firewall
 
     if ! kubectl get clusterrolebinding cluster-admin-binding &> /dev/null; then
       kubectl create clusterrolebinding cluster-admin-binding \
@@ -255,8 +256,27 @@ init() {
         --verb=list,get,watch \
         --resource=configmaps \
         --resource-name=common
+        kubectl label clusterrole common-config user=workshop
     fi
 }
+
+init-firewall() {
+  if gcloud compute firewall-rules describe external-nodeports &> /dev/null; then
+    echo "---> firewall is already opened for NodePorts"
+    return
+  fi
+
+  echo "---> open up firewall for NodePorts (30000-32767)"
+  gcloud compute firewall-rules create external-nodeports \
+   --description="allow external access to k8s nodeport" \
+   --direction=INGRESS \
+   --priority=1000 \
+   --network=default \
+   --action=ALLOW \
+   --rules=tcp:30000-32767 \
+   --source-ranges=0.0.0.0/0
+}
+
 workshop-context() {
   : ${workshopNamespace:? required}
 
