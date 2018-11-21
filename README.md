@@ -54,6 +54,13 @@ $ get-url user5
 open http://35.199.111.25:31234/1g7j7u0l/
 ```
 
+## Related work
+
+- [Namespace Validaing Admission Webhook](https://github.com/lalyos/k8s-ns-admission)
+- [ssh-front](https://github.com/lalyos/k8s-sshfront)
+- [self-service](https://github.com/lalyos/gitter-scripter)
+- [patched gotty](https://github.com/lalyos/gotty)
+
 ## Presenter
 
 The presenter can share its terminal session in as *read-only* via browser. Participants can easily copy-paste commands.
