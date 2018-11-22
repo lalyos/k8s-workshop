@@ -301,6 +301,12 @@ clean-user() {
     kubectl delete all,ns,sa,clusterrolebinding -l "user in (${ns},${ns}play)"
 }
 
+list-sessions() {
+  echo === unassigned sessions:
+  kubectl get deployments -l 'user,!ghuser'
+  echo === assigned sessions:
+  kubectl get deployments -l ghuser -o custom-columns='NAME:.metadata.name,GHUSER:.metadata.labels.ghuser,URL:.metadata.annotations.sessionurl'
+}
 main() {
   : DEBUG=1
   init
