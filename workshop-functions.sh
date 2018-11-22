@@ -298,7 +298,7 @@ clean-user() {
     ns=$1;
     : ${ns:?required};
 
-    kubectl delete  ns,sa,clusterrolebinding,deployment,svc -l user=${ns}
+    kubectl delete all,ns,sa,clusterrolebinding -l "user in (${ns},${ns}play)"
 }
 
 main() {
