@@ -1,2 +1,2 @@
-.profile
-config-admin.yaml
+config-*.yaml
+.profile*
