@@ -307,6 +307,36 @@ list-sessions() {
   echo === assigned sessions:
   kubectl get deployments -l ghuser -o custom-columns='NAME:.metadata.name,GHUSER:.metadata.labels.ghuser,URL:.metadata.annotations.sessionurl'
 }
+init-ingress() {
+  # check that default GLBC plugin is stopped
+  glbc=$(kubectl get deployments,svc -n kube-system -lk8s-app=glbc 2>/dev/null)
+  if [[ "$glbc" ]]; then
+    cat << EOF
+[WARNING] defult glbc addon should be disabled
+  - navigate to: https://console.cloud.google.com/kubernetes/list
+  - choose cluster
+  - "edit"
+  - open "Add-ons" section
+  - disable "HTTP load balancing"
+  - "save"
+EOF
+    return
+  fi
+  echo "---> check default GLBC plugin is disbled: ok"
+
+  if kubectl get ns ingress-nginx &> /dev/null; then
+    echo "---> ingress-nginx is already deployed ..."
+  else 
+    echo "---> create: ns,cm,sa,crole,dep"
+    kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/master/deploy/mandatory.yaml
+    echo "---> creates single LB" 
+    kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/master/deploy/provider/cloud-generic.yaml
+  fi
+
+  ingressip=$(kubectl get svc -n ingress-nginx ingress-nginx -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+  echo "---> set external dns (*.k8z.eu) to:  $ingressip"
+
+}
 main() {
   : DEBUG=1
   init
