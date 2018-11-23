@@ -32,7 +32,18 @@ rules:
   - jobs
   - cronjobs
   verbs: ["*"]
-
+- apiGroups: ["rbac.authorization.k8s.io"]
+  resources:
+  - roles
+  - rolebindings
+  verbs: ["*"]
+- apiGroups: ["rbac.authorization.k8s.io"]
+  resources:
+  - clusterroles
+  - clusterrolebindings
+  verbs:
+  - get
+  - list
 ---
 kind: RoleBinding
 apiVersion: rbac.authorization.k8s.io/v1beta1
