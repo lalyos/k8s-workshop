@@ -101,7 +101,7 @@ namespace() {
 
     kubectl create clusterrolebinding crb-${namespace} --clusterrole=lister --serviceaccount=${workshopNamespace}:sa-${namespace}
     kubectl label clusterrolebinding crb-${namespace} user=${namespace} 
-    kubectl create clusterrolebinding crb-cc-${namespace} --clusterrole=common-config --serviceaccount=${namespace}:sa-${namespace}
+    kubectl create clusterrolebinding crb-cc-${namespace} --clusterrole=common-config --serviceaccount=${workshopNamespace}:sa-${namespace}
     kubectl label clusterrolebinding crb-cc-${namespace} user=${namespace} 
     
 }
