@@ -280,6 +280,10 @@ init() {
         --user ${userEmail}
      fi
 
+    # In case the above doesn't work ask the account owner to do:
+    # prj=$(gcloud config get-value project 2>/dev/null)
+    # gcloud projects add-iam-policy-binding $prj --member=$userEmail --role=roles/container.admin
+
     if ! kubectl get clusterrole lister &> /dev/null; then
       kubectl create clusterrole lister \
         --verb=get,list,watch \
