@@ -108,6 +108,7 @@ disable-namespaces() {
 
 depl() {
   declare namespace=${1}
+  : ${domain:=k8z.eu}
   : ${namespace:? required}
   : ${gitrepo:=https://github.com/ContainerSolutions/ws-kubernetes-essentials-app.git}
 
@@ -181,6 +182,23 @@ spec:
   selector:
     run: ${name}
   type: NodePort
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  annotations:
+    nginx.org/websocket-services: ${name}
+  labels:
+    user: "${namespace}"
+  name: ${name} 
+spec:
+  rules:
+  - host: ${name}.${domain}
+    http:
+      paths:
+      - backend:
+          serviceName: ${name}
+          servicePort: 8080
 EOF
 }
 
