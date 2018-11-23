@@ -333,7 +333,7 @@ clean-user() {
     ns=$1;
     : ${ns:?required};
 
-    kubectl delete all,ns,sa,clusterrolebinding -l "user in (${ns},${ns}play)"
+    kubectl delete all,ns,sa,clusterrolebinding,ing -l "user in (${ns},${ns}play)"
 }
 
 list-sessions() {
