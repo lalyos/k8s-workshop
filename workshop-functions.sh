@@ -288,6 +288,7 @@ init() {
       kubectl create clusterrole lister \
         --verb=get,list,watch \
         --resource=nodes,namespaces
+        kubectl label clusterrole lister user=workshop
     fi
 
     if ! kubectl get clusterrole common-config &> /dev/null; then
