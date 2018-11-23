@@ -107,8 +107,13 @@ namespace() {
 }
 
 enable-namespaces() {
+
   if ! kubectl get validatingwebhookconfiguration workshopnamespacevalidator -o name 2> /dev/null ;then
-    kubectl apply -f https://raw.githubusercontent.com/lalyos/k8s-ns-admission/master/deploy-webhook-job.yaml 
+    # right now de deployer only works in the default ns
+    origns=$(kubectl config view --minify -o jsonpath='{.contexts[0].context.namespace}')
+    kubectl config set-context $(kubectl config current-context) --namespace=default
+    kubectl apply -f https://raw.githubusercontent.com/lalyos/k8s-ns-admission/master/deploy-webhook-job.yaml
+    kubectl config set-context $(kubectl config current-context) --namespace=${origns}
   fi 
   kubectl patch clusterrole lister --patch='{"rules":[{"apiGroups":[""],"resources":["nodes","namespaces"],"verbs":["*"]}]}'
 }
