@@ -362,7 +362,8 @@ EOF
 
   if kubectl get ns ingress-nginx &> /dev/null; then
     echo "---> ingress-nginx is already deployed ..."
-  else 
+  else
+    # https://kubernetes.github.io/ingress-nginx/deploy/#gce-gke
     echo "---> create: ns,cm,sa,crole,dep"
     kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/master/deploy/mandatory.yaml
     echo "---> creates single LB" 
@@ -370,8 +371,13 @@ EOF
   fi
 
   ingressip=$(kubectl get svc -n ingress-nginx ingress-nginx -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
-  echo "---> set external dns (*.k8z.eu) to:  $ingressip"
 
+  echo "---> checking DNS A record (*.${domain}) points to: $ingressip ..." 
+  if [[ $(dig +short *.${domain}) == $ingressip ]] ; then 
+    echo "DNS setting are ok"
+  else 
+    echo "---> set external dns A record (*.${domain}) to: $ingressip"
+  fi
 }
 main() {
   : DEBUG=1
