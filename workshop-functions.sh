@@ -187,13 +187,14 @@ EOF
 dev() {
     declare namespace=${1}
     : ${namespace:? required}
+    : ${workshopNamespace:? required}
     
     namespace ${namespace}
     namespace ${namespace}play
     kubectl create rolebinding crb-${namespace}-x \
       --role=role-${namespace}play \
       --namespace=${namespace}play \
-      --serviceaccount=default:sa-${namespace}
+      --serviceaccount=${workshopNamespace}:sa-${namespace}
 
     depl ${namespace}| kubectl create -f - 
 
