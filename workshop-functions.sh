@@ -322,10 +322,11 @@ clean-user() {
 
 list-sessions() {
   echo === unassigned sessions:
-  kubectl get deployments -l 'user,!ghuser'
+  kubectl get deployments --all-namespaces -l 'user,!ghuser'
   echo === assigned sessions:
-  kubectl get deployments -l ghuser -o custom-columns='NAME:.metadata.name,GHUSER:.metadata.labels.ghuser,URL:.metadata.annotations.sessionurl'
+  kubectl get deployments --all-namespaces -l ghuser -o custom-columns='NAME:.metadata.name,GHUSER:.metadata.labels.ghuser,URL:.metadata.annotations.sessionurl'
 }
+
 init-ingress() {
   # check that default GLBC plugin is stopped
   glbc=$(kubectl get deployments,svc -n kube-system -lk8s-app=glbc 2>/dev/null)
