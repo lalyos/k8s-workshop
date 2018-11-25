@@ -48,6 +48,10 @@ USAGE
   ZED_USAGE_SHOWN=1
 }
 
+fix-kubectl-autocomp() {
+  [[ $KUBECTL_AUTOCOMP_FIXED ]] || source <(curl -Ls http://bit.ly/kubectl-fix)
+}
+
 zed() {
   if pgrep zed &> /dev/null; then
     echo zed is already running, to stop: pkill zed
@@ -69,6 +73,8 @@ common-env &> /dev/null
 
 kubectl config set-context default --namespace=$NS
 kubectl config use-context default
+
+fix-kubectl-autocomp
 
 alias motd='cat /etc/motd'
 motd
