@@ -1,4 +1,9 @@
-this document explains how to set up the infrastructure for a workshop
+this document explains how to set up the infrastructure for a workshop.
+
+To set up the infrastucture, you can use Google Shell, with all the tools
+preinstalled, and authenticated against the CS account.
+Just use this url: [CloudShell](https://console.cloud.google.com/cloudshell/open?git_repo=https://github.com/lalyos/k8s-workshop&tutorial=infra-setup.md
+)
 
 ## Configure Project
 
