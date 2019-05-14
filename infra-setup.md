@@ -1,0 +1,3 @@
+this document explains how to set up the infrastructure for a workshop
+
+## todo ...
