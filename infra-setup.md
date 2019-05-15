@@ -136,3 +136,10 @@ For testing the environment lets just create the **user0** session, which will b
 ```
 dev user0
 ```
+
+To create more user sssions use the following line
+```
+for u in user{2..15}; do dev $u; done
+```
+
+
