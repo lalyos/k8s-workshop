@@ -31,5 +31,6 @@ RUN curl -Lo /usr/local/bin/zedrem https://github.com/lalyos/zedrem/releases/dow
   && chmod +x /usr/local/bin/zedrem 
 RUN kubectl completion bash > /etc/bash_completion.d/kubectl
 RUN helm completion bash > /etc/bash_completion.d/helm
+ADD https://raw.githubusercontent.com/cykerway/complete-alias/master/bash_completion.sh  /etc/bash_completion.d/alias-complete
 ADD motd /etc/motd
 ADD bash_aliases /root/.bash_aliases

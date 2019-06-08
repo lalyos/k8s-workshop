@@ -79,4 +79,16 @@ kubectl config use-context default
 fix-kubectl-autocomp
 
 alias motd='cat /etc/motd'
+
+## kubernetes
+alias k='kubectl'
+alias kal='kubectl get all'
+alias kg='kubectl get'
+alias kgy='kubectl get -o yaml'
+alias kgs='kubectl get -n kube-system'
+
+alias aliascomp='complete -F _complete_alias'
+for a in k kg kal kgy kgs; do
+  aliascomp $a
+done
 motd
