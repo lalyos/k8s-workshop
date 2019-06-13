@@ -24,7 +24,9 @@ USAGE
     kubectl create configmap ssh --from-literal="key=$(cat)"  --dry-run -o yaml | kubectl apply -f -  
   fi
 
-  echo -e "You can now connect via:\n  ssh ${NS}@${CM_SSH_DOMAIN} -p ${CM_SSH_PORT}"
+  sshPort=${CM_SSH_PORT:=$(kubectl get svc sshfront -n workshop -o jsonpath='{.spec.ports[0].nodePort}')}
+  sshHost=${CM_SSH_DOMAIN:=$(kubectl get no -o jsonpath='{.items[0].status.addresses[1].address}')}
+  echo -e "You can now connect via:\n  ssh ${NS}@${sshHost} -p ${sshPort}"
 }
 
 list-common-env() {
@@ -77,4 +79,16 @@ kubectl config use-context default
 fix-kubectl-autocomp
 
 alias motd='cat /etc/motd'
+
+## kubernetes
+alias k='kubectl'
+alias kal='kubectl get all'
+alias kg='kubectl get'
+alias kgy='kubectl get -o yaml'
+alias kgs='kubectl get -n kube-system'
+
+alias aliascomp='complete -F _complete_alias'
+for a in k kg kal kgy kgs; do
+  aliascomp $a
+done
 motd

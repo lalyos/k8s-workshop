@@ -136,3 +136,75 @@ For testing the environment lets just create the **user0** session, which will b
 ```
 dev user0
 ```
+
+To create more user sssions use the following line
+```
+for u in user{2..15}; do dev $u; done
+```
+
+
+## Enable ssh
+
+Sometimes the web based sessions are loosing connection. Proxies and websockets sometimes dont like eachother. Ssh to the rescue.
+
+To make user sessions available as via ssh:
+```
+#kubectl apply -f https://raw.githubusercontent.com/lalyos/k8s-sshfront/master/sshfront.yaml
+
+## fix default ns issue
+curl  -s https://raw.githubusercontent.com/lalyos/k8s-sshfront/master/sshfront.yaml \
+  | sed "s/default/$workshopNamespace/" \
+  | kubectl apply -f -
+```
+
+now pods can be accesed via ssh. the following will print instructions:
+```
+echo ssh $(kubectl get no -o jsonpath='{.items[0].status.addresses[?(.type=="ExternalIP")].address}')   -p $(kubectl get svc sshfront -o jsonpath='{.spec.ports[0].nodePort}')   -l PODNAME
+```
+
+to get user session authentications 2 steps needed:
+- users itself has to register their ssh publey (store it in a cm by the ssh-pubkey function)
+- admin has to set a common env variable (in the common cm) to point to the ssh svc NodePort.
+
+update the file 'common.env' with something like:
+```
+...
+SSH_DOMAIN=n1.k8z.eu
+SSH_PORT=32531
+...
+```
+
+than update and distribute the common env to all user session
+```
+update-common-env
+```
+
+than users can retrieve the common envs in their session by the **common-env** function
+
+## Self Service portal
+
+After creating the user sessions, its hard to distribute/assign the session urls.
+
+There is a small gitter authentication based web app, where participants can get an unused
+session assigned to them.
+More details and the process toget GITTER credentials is described: https://github.com/lalyos/gitter-scripter
+
+```
+export GITTER_OAUTH_KEY=xxxxxxx
+export GITTER_OAUTH_SECRET=yyyyyyy
+kubectl create secret generic gitter \
+  --from-literal=GITTER_OAUTH_KEY=$GITTER_OAUTH_KEY \
+  --from-literal=GITTER_OAUTH_SECRET=$GITTER_OAUTH_SECRET
+# todo automate setting of gitter room:
+
+export workshopNamespace=workshop
+export domain=k8z.eu
+curl -sL https://raw.githubusercontent.com/lalyos/gitter-scripter/master/gitter-template.yaml \
+  | envsubst \
+  | kubectl apply -f -
+
+export gitterRoom=lalyos/earthport
+kubectl patch deployments gitter --patch '{"spec":{"template":{"spec":{"$setElementOrder/containers":[{"name":"gitter"}],"containers":[{"$setElementOrder/env":[{"name":"GITTER_ROOM_NAME"},{"name":"DOMAIN"}],"env":[{"name":"GITTER_ROOM_NAME","value":"'${gitterRoom}'"}],"name":"gitter"}]}}}}'
+```
+
+The users can self service at: http://session.k8z.eu
