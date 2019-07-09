@@ -96,6 +96,7 @@ kubectl config use-context default
 fix-kubectl-autocomp
 
 alias motd='cat /etc/motd'
+alias help='{ command help; motd; }'
 
 ## kubernetes
 alias k='kubectl'
