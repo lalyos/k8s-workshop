@@ -12,6 +12,7 @@
 #   common-env - imports common env variables set by presenter
 #   ssh-pubkey - sets up ssh access to this session
 #   motd - Message Of The Day (displays this help text)
+#   svc - lists clickable NodePort services and Ingress urls
 #   k - Alias for kubectl with bash autocompletion
 #
 # start with:

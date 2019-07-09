@@ -29,6 +29,23 @@ USAGE
   echo -e "You can now connect via:\n  ssh ${NS}@${sshHost} -p ${sshPort}"
 }
 
+nodeports() {
+  echo "===> NodePort services:"
+  k get svc -o jsonpath="{range .items[?(.spec.type == 'NodePort')]} {.metadata.name} -> http://$EXTERNAL:{.spec.ports[0].nodePort} {'\n'}{end}"
+  echo
+}
+
+ingresses() {
+  echo "===> Ingresses:"
+  k get ing -o jsonpath='{range .items[*]} http://{.spec.rules[0].host}{"\n"}{end}'
+  echo
+}
+
+svc() {
+ nodeports
+ ingresses 
+}
+
 list-common-env() {
   kubectl get configmaps -n default common -o go-template='{{range $k,$v := .data}}{{printf "export CM_%s=%s\n" $k $v}}{{end}}'
 }
