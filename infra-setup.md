@@ -141,6 +141,7 @@ For testing the environment lets just create the **user0** session, which will b
 ```
 dev user0
 ```
+Please note, the first couple may take more time, as the docker image should be pulled on each node.
 
 To create more user sssions use the following line
 ```
