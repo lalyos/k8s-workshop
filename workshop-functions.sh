@@ -261,9 +261,19 @@ get-url() {
     : ${deployment:? required}
     pod=$(kubectl get po -lrun=${deployment} -o jsonpath='{.items[0].metadata.name}')
     rndPath=$(kubectl logs ${pod} |sed -n '/HTTP server is listening at/ s/.*:8080//p')
+
+    sessionurl=$(kubectl get deployments. ${deployment} -o jsonpath='{.metadata.annotations.sessionurl}')
+    newSessionUrl="${sessionurl%/*/}${rndPath}"
+    kubectl annotate deployments ${deployment} --overwrite sessionurl="${newSessionUrl}"
+    
     externalip=$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type == "ExternalIP")].address}') 
-    kubectl get svc ${deployment} -o jsonpath="open http://${externalip}:{.spec.ports[0].nodePort}${rndPath}"
-    echo
+    nodePort=$(kubectl get svc ${deployment} -o jsonpath="{.spec.ports[0].nodePort}")
+    sessionUrlNodePort="http://${externalip}:${nodePort}${rndPath}"
+    kubectl annotate deployments ${deployment} --overwrite sessionurlnp=${sessionUrlNodePort}
+
+    echo "open ${sessionUrlNodePort}"
+    echo "open ${newSessionUrl}"
+
 }
 
 init() {
