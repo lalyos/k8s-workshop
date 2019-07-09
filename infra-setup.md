@@ -67,6 +67,11 @@ checking the GKE cluster
 ```
 gcloud container clusters list
 ```
+
+get kubectl credentials
+```
+gcloud container clusters get-credentials workshop --region=europe-west3-b
+```
 ## Starting Workshop infra on gke
 
 You need to set up the following 2 env vars:
