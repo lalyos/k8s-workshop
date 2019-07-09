@@ -345,7 +345,10 @@ list-sessions() {
   echo === unassigned sessions:
   kubectl get deployments --all-namespaces -l 'user,!ghuser'
   echo === assigned sessions:
-  kubectl get deployments --all-namespaces -l ghuser -o custom-columns='NAME:.metadata.name,GHUSER:.metadata.labels.ghuser,URL:.metadata.annotations.sessionurl'
+  kubectl get deployments \
+    --all-namespaces \
+    -l ghuser \
+    -o custom-columns='NAME:.metadata.name,GHUSER:.metadata.labels.ghuser,URL1:.metadata.annotations.sessionurl,URL2:.metadata.annotations.sessionurlnp'
 }
 
 init-ingress() {
