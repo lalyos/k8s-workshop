@@ -70,7 +70,7 @@ gcloud container clusters list
 
 get kubectl credentials
 ```
-gcloud container clusters get-credentials workshop --region=europe-west3-b
+gcloud container clusters get-credentials workshop --zone=europe-west3-b
 ```
 ## Starting Workshop infra on gke
 
