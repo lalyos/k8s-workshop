@@ -96,14 +96,14 @@ namespace() {
     : ${workshopNamespace:? required}
 
     kubectl create ns ${namespace}
-    kubectl label ns ${namespace} user=${namespace}
+    kubectl label ns ${namespace} user=${namespace} 
     assign-role-to-ns ${namespace} | kubectl create -f -
 
     kubectl create clusterrolebinding crb-${namespace} --clusterrole=lister --serviceaccount=${workshopNamespace}:sa-${namespace}
-    kubectl label clusterrolebinding crb-${namespace} user=${namespace}
+    kubectl label clusterrolebinding crb-${namespace} user=${namespace} 
     kubectl create clusterrolebinding crb-cc-${namespace} --clusterrole=common-config --serviceaccount=${workshopNamespace}:sa-${namespace}
-    kubectl label clusterrolebinding crb-cc-${namespace} user=${namespace}
-
+    kubectl label clusterrolebinding crb-cc-${namespace} user=${namespace} 
+    
 }
 
 enable-namespaces() {
@@ -114,7 +114,7 @@ enable-namespaces() {
     kubectl config set-context $(kubectl config current-context) --namespace=default
     kubectl apply -f https://raw.githubusercontent.com/lalyos/k8s-ns-admission/master/deploy-webhook-job.yaml
     kubectl config set-context $(kubectl config current-context) --namespace=${origns}
-  fi
+  fi 
   kubectl patch clusterrole lister --patch='{"rules":[{"apiGroups":[""],"resources":["nodes","namespaces"],"verbs":["*"]}]}'
 }
 
@@ -166,7 +166,7 @@ spec:
           - name: NS
             value: ${name}
           - name: TILLER_NAMESPACE
-            value: ${name}
+            value: ${name} 
           - name: NODE
             valueFrom:
               fieldRef:
@@ -181,7 +181,7 @@ spec:
         name: dev
         volumeMounts:
           - mountPath: /root/workshop
-            name: gitrepo
+            name: gitrepo 
 ---
 apiVersion: v1
 kind: Service
@@ -206,7 +206,7 @@ metadata:
     nginx.org/websocket-services: ${name}
   labels:
     user: "${namespace}"
-  name: ${name}
+  name: ${name} 
 spec:
   rules:
   - host: ${name}.${domain}
@@ -222,7 +222,7 @@ dev() {
     declare namespace=${1}
     : ${namespace:? required}
     : ${workshopNamespace:? required}
-
+    
     namespace ${namespace}
     namespace ${namespace}play
     kubectl create rolebinding crb-${namespace}-x \
@@ -230,10 +230,10 @@ dev() {
       --namespace=${namespace}play \
       --serviceaccount=${workshopNamespace}:sa-${namespace}
 
-    depl ${namespace}| kubectl create -f -
+    depl ${namespace}| kubectl create -f - 
 
     wait-for-deployment ${namespace}
-    get-url ${namespace}
+    get-url ${namespace} 
 }
 
 presenter() {
@@ -250,7 +250,7 @@ presenter-url() {
       kubectl expose deployment user0 --port 8888 --type=NodePort --name presenter
     fi
 
-   externalip=$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type == "ExternalIP")].address}')
+   externalip=$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type == "ExternalIP")].address}') 
    kubectl get svc presenter -o jsonpath="open http://${externalip}:{.spec.ports[0].nodePort}"
    echo
 }
@@ -261,9 +261,19 @@ get-url() {
     : ${deployment:? required}
     pod=$(kubectl get po -lrun=${deployment} -o jsonpath='{.items[0].metadata.name}')
     rndPath=$(kubectl logs ${pod} |sed -n '/HTTP server is listening at/ s/.*:8080//p')
-    externalip=$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type == "ExternalIP")].address}')
-    kubectl get svc ${deployment} -o jsonpath="open http://${externalip}:{.spec.ports[0].nodePort}${rndPath}"
-    echo
+
+    sessionurl=$(kubectl get deployments. ${deployment} -o jsonpath='{.metadata.annotations.sessionurl}')
+    newSessionUrl="${sessionurl%/*/}${rndPath}"
+    kubectl annotate deployments ${deployment} --overwrite sessionurl="${newSessionUrl}"
+    
+    externalip=$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type == "ExternalIP")].address}') 
+    nodePort=$(kubectl get svc ${deployment} -o jsonpath="{.spec.ports[0].nodePort}")
+    sessionUrlNodePort="http://${externalip}:${nodePort}${rndPath}"
+    kubectl annotate deployments ${deployment} --overwrite sessionurlnp=${sessionUrlNodePort}
+
+    echo "open ${sessionUrlNodePort}"
+    echo "open ${newSessionUrl}"
+
 }
 
 init() {
@@ -326,15 +336,15 @@ workshop-context() {
     return
   fi
   kubectl config view --minify --flatten > config-orig.yaml
-  kubectl create ns ${workshopNamespace}
-  cp config-orig.yaml config-workshop.yaml
+  kubectl create ns ${workshopNamespace} 
+  cp config-orig.yaml config-workshop.yaml 
   export KUBECONFIG=$PWD/config-workshop.yaml
   kubectl config set-context $(kubectl config current-context) --namespace=${workshopNamespace}
   echo "---> context set to use namespace: ${workshopNamespace}, by:"
   echo "export KUBECONFIG=$KUBECONFIG"
 }
 
-clean-user() {
+clean-user() { 
     ns=$1;
     : ${ns:?required};
 
@@ -345,7 +355,10 @@ list-sessions() {
   echo === unassigned sessions:
   kubectl get deployments --all-namespaces -l 'user,!ghuser'
   echo === assigned sessions:
-  kubectl get deployments --all-namespaces -l ghuser -o custom-columns='NAME:.metadata.name,GHUSER:.metadata.labels.ghuser,URL:.metadata.annotations.sessionurl'
+  kubectl get deployments \
+    --all-namespaces \
+    -l ghuser \
+    -o custom-columns='NAME:.metadata.name,GHUSER:.metadata.labels.ghuser,URL1:.metadata.annotations.sessionurl,URL2:.metadata.annotations.sessionurlnp'
 }
 
 init-ingress() {
@@ -371,16 +384,16 @@ EOF
     # https://kubernetes.github.io/ingress-nginx/deploy/#gce-gke
     echo "---> create: ns,cm,sa,crole,dep"
     kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/master/deploy/static/mandatory.yaml
-    echo "---> creates single LB"
+    echo "---> creates single LB" 
     kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/master/deploy/static/provider/cloud-generic.yaml
   fi
 
   ingressip=$(kubectl get svc -n ingress-nginx ingress-nginx -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
 
-  echo "---> checking DNS A record (*.${domain}) points to: $ingressip ..."
-  if [[ $(dig +short *.${domain}) == $ingressip ]] ; then
+  echo "---> checking DNS A record (*.${domain}) points to: $ingressip ..." 
+  if [[ $(dig +short *.${domain}) == $ingressip ]] ; then 
     echo "DNS setting are ok"
-  else
+  else 
     echo "---> set external dns A record (*.${domain}) to: $ingressip"
   fi
 }

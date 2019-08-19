@@ -67,6 +67,11 @@ checking the GKE cluster
 ```
 gcloud container clusters list
 ```
+
+get kubectl credentials
+```
+gcloud container clusters get-credentials workshop --zone=europe-west3-b
+```
 ## Starting Workshop infra on gke
 
 You need to set up the following 2 env vars:
@@ -136,6 +141,7 @@ For testing the environment lets just create the **user0** session, which will b
 ```
 dev user0
 ```
+Please note, the first couple may take more time, as the docker image should be pulled on each node.
 
 To create more user sssions use the following line
 ```

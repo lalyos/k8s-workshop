@@ -1,4 +1,4 @@
-export EXTERNAL=$(curl -s http://metadata/computeMetadata/v1beta1/instance/network-interfaces/0/access-configs/0/external-ip)
+export EXTERNAL=$(curl -s http://metadata/computeMetadata/v1/instance/network-interfaces/0/access-configs/0/external-ip -H 'Metadata-Flavor: Google')
 
 export NODE_IP=$(kubectl get no $NODE -o jsonpath='{.status.addresses[1].address}')
 
@@ -27,6 +27,23 @@ USAGE
   sshPort=${CM_SSH_PORT:=$(kubectl get svc sshfront -n workshop -o jsonpath='{.spec.ports[0].nodePort}')}
   sshHost=${CM_SSH_DOMAIN:=$(kubectl get no -o jsonpath='{.items[0].status.addresses[1].address}')}
   echo -e "You can now connect via:\n  ssh ${NS}@${sshHost} -p ${sshPort}"
+}
+
+nodeports() {
+  echo "===> NodePort services:"
+  k get svc -o jsonpath="{range .items[?(.spec.type == 'NodePort')]} {.metadata.name} -> http://$EXTERNAL:{.spec.ports[0].nodePort} {'\n'}{end}"
+  echo
+}
+
+ingresses() {
+  echo "===> Ingresses:"
+  k get ing -o jsonpath='{range .items[*]} http://{.spec.rules[0].host}{"\n"}{end}'
+  echo
+}
+
+svc() {
+ nodeports
+ ingresses 
 }
 
 list-common-env() {
@@ -79,6 +96,7 @@ kubectl config use-context default
 fix-kubectl-autocomp
 
 alias motd='cat /etc/motd'
+alias help='{ command help; motd; }'
 
 ## kubernetes
 alias k='kubectl'
