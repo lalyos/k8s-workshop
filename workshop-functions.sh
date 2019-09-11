@@ -32,6 +32,12 @@ rules:
   - jobs
   - cronjobs
   verbs: ["*"]
+- apiGroups: ["networking.istio.io"]
+  resources:
+  - virtualservices
+  - gateways
+  - destinationrules
+  verbs: ["*"]
 - apiGroups: ["rbac.authorization.k8s.io"]
   resources:
   - roles
@@ -105,7 +111,7 @@ namespace() {
     kubectl label clusterrolebinding crb-cc-${namespace} user=${namespace} 
 
     kubectl create clusterrolebinding crb-ssh-${namespace} --clusterrole=sshreader --serviceaccount=${workshopNamespace}:sa-${namespace}
-    kubectl label clusterrolebinding crb-ssh-${namespace} user=${namespace}  
+    kubectl label clusterrolebinding crb-ssh-${namespace} user=${namespace}
 }
 
 enable-namespaces() {
@@ -130,7 +136,7 @@ depl() {
   : ${namespace:? required}
   : ${gitrepo:? required}
   : ${sessionSecret:=cloudnative1337}
-  
+
   local name=${namespace}
 
 cat <<EOF
@@ -412,7 +418,7 @@ EOF
   ingressip=$(kubectl get svc -n ingress-nginx ingress-nginx -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
 
   echo "---> checking DNS A record (*.${domain}) points to: $ingressip ..." 
-  if [[ $(dig +short "*.${domain}") == $ingressip ]] ; then 
+  if [[ $(dig +short "*.${domain}") == $ingressip ]] ; then
     echo "DNS setting are ok"
   else 
     echo "---> set external dns A record (*.${domain}) to: $ingressip"
