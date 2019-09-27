@@ -8,7 +8,7 @@ Just use this url: [CloudShell](https://console.cloud.google.com/cloudshell/open
 ## Configure Project
 
 ```
-gcloud config set project  container-solutions-workshops
+gcloud config set project container-solutions-workshops
 ```
 
 list existing clusters
@@ -29,20 +29,18 @@ gcloud beta container \
       clusters create "workshop" \
       --zone "europe-west3-b" \
       --username "admin" \
-      --cluster-version "1.12.7-gke.10" \
+      --cluster-version "1.13.7-gke.8" \
       --machine-type "n1-standard-2" \
       --image-type "UBUNTU" \
       --disk-type "pd-standard" \
       --disk-size "100" \
       --metadata disable-legacy-endpoints=true \
       --scopes "https://www.googleapis.com/auth/devstorage.read_only","https://www.googleapis.com/auth/logging.write","https://www.googleapis.com/auth/monitoring","https://www.googleapis.com/auth/servicecontrol","https://www.googleapis.com/auth/service.management.readonly","https://www.googleapis.com/auth/trace.append" \
-      --num-nodes "3" \
+      --num-nodes "4" \
       --enable-cloud-logging \
-      --enable-cloud-monitoring \
       --no-enable-ip-alias \
       --network "projects/container-solutions-workshops/global/networks/default" \
-      --addons HorizontalPodAutoscaling,HttpLoadBalancing,Istio \
-      --istio-config auth=MTLS_PERMISSIVE \
+      --addons HorizontalPodAutoscaling,HttpLoadBalancing \
       --enable-autoupgrade \
       --enable-autorepair \
  && gcloud beta container \
@@ -50,7 +48,7 @@ gcloud beta container \
       node-pools create "pool-1" \
       --cluster "workshop" \
       --zone "europe-west3-b" \
-      --node-version "1.12.7-gke.10" \
+      --node-version "1.13.7-gke.8" \
       --machine-type "n1-standard-2" \
       --image-type "UBUNTU" \
       --disk-type "pd-standard" \
@@ -58,12 +56,12 @@ gcloud beta container \
       --metadata disable-legacy-endpoints=true \
       --scopes "https://www.googleapis.com/auth/devstorage.read_only","https://www.googleapis.com/auth/logging.write","https://www.googleapis.com/auth/monitoring","https://www.googleapis.com/auth/servicecontrol","https://www.googleapis.com/auth/service.management.readonly","https://www.googleapis.com/auth/trace.append" \
       --preemptible \
-      --num-nodes "3" \
+      --num-nodes "4" \
       --no-enable-autoupgrade \
       --enable-autorepair
 ```
 
-checking the GKE cluster 
+checking the GKE cluster
 ```
 gcloud container clusters list
 ```
@@ -77,8 +75,8 @@ gcloud container clusters get-credentials workshop --zone=europe-west3-b
 You need to set up the following 2 env vars:
 ```
 export workshopNamespace=workshop
-export domain=k8z.eu
-export gitrepo=https://github.com/lalyos/timber
+export domain=cict.training.csol.cloud
+export gitrepo=https://github.com/ContainerSolutions/timber
 ```
 
 First you have to load the helper bash functions:
@@ -132,7 +130,12 @@ kubectl get all -n ingress-nginx
 DNS setup
 
  Follow the instructions of `init-ingress` function about the IP adress of the deployed ingress controller.
- 
+
+## Setup Ingress domain
+
+Ensure that the ".training.csol.cloud" domain point to the IP address of the Ingress
+
+https://console.cloud.google.com/net-services/dns/zones/training-csol-cloud?project=container-solutions-workshops&authuser=1&organizationId=879351307558
 
 ## Create user sessions
 
@@ -145,7 +148,7 @@ Please note, the first couple may take more time, as the docker image should be 
 
 To create more user sssions use the following line
 ```
-for u in user{2..15}; do dev $u; done
+for u in user{2..12}; do dev $u; done
 ```
 
 
@@ -175,7 +178,7 @@ to get user session authentications 2 steps needed:
 update the file 'common.env' with something like:
 ```
 ...
-SSH_DOMAIN=n1.k8z.eu
+SSH_DOMAIN=n1.training.csol.cloud
 SSH_PORT=32531
 ...
 ```
@@ -204,7 +207,7 @@ kubectl create secret generic gitter \
 # todo automate setting of gitter room:
 
 export workshopNamespace=workshop
-export domain=k8z.eu
+export domain=training.csol.cloud
 curl -sL https://raw.githubusercontent.com/lalyos/gitter-scripter/master/gitter-template.yaml \
   | envsubst \
   | kubectl apply -f -
@@ -213,4 +216,4 @@ export gitterRoom=lalyos/earthport
 kubectl patch deployments gitter --patch '{"spec":{"template":{"spec":{"$setElementOrder/containers":[{"name":"gitter"}],"containers":[{"$setElementOrder/env":[{"name":"GITTER_ROOM_NAME"},{"name":"DOMAIN"}],"env":[{"name":"GITTER_ROOM_NAME","value":"'${gitterRoom}'"}],"name":"gitter"}]}}}}'
 ```
 
-The users can self service at: http://session.k8z.eu
+The users can self service at: http://session.training.csol.cloud
