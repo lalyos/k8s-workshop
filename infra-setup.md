@@ -29,7 +29,7 @@ gcloud beta container \
       clusters create "workshop" \
       --zone "europe-west3-b" \
       --username "admin" \
-      --cluster-version "1.13.7-gke.8" \
+      --cluster-version "1.13.10-gke.0" \
       --machine-type "n1-standard-2" \
       --image-type "UBUNTU" \
       --disk-type "pd-standard" \
@@ -48,7 +48,7 @@ gcloud beta container \
       node-pools create "pool-1" \
       --cluster "workshop" \
       --zone "europe-west3-b" \
-      --node-version "1.13.7-gke.8" \
+      --node-version "1.13.10-gke.0" \
       --machine-type "n1-standard-2" \
       --image-type "UBUNTU" \
       --disk-type "pd-standard" \
@@ -125,6 +125,12 @@ To check that the nginx ingress is fully deployed, list resources in the **ingre
 
 ```
 kubectl get all -n ingress-nginx
+```
+
+If your nginx pod is stuck in `Pending` stage, you may be missing the expected label on your nodes. This can be solved with the following command which will apply the expected label to all nodes:
+
+```
+kubectl label node --all kubernetes.io/os=linux
 ```
 
 DNS setup
