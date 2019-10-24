@@ -20,23 +20,30 @@ gcloud container clusters list
 ## start a new clusters
 
 Lets start a 6 node cluster:
-- default node pool with 3 n1-standard-2 instances
-- second pool with 3 preemptible n1-standard-2 instances
+- default node pool with 3 instances
+- second pool with 3 preemptible instances
 
 ```
+echo ${clusterName:=workshop}
+echo ${clusterVersion:=$(gcloud container get-server-config  --format="value(validMasterVersions[0])" 2>/dev/null)}
+echo ${machineType:=n1-standard-2}
+echo ${defPoolSize:=3}
+echo ${preemPoolSize:=3}
+echo ${zone:=europe-west3-b}
+
 gcloud beta container \
       --project "container-solutions-workshops" \
-      clusters create "workshop" \
-      --zone "europe-west3-b" \
+      clusters create "${clusterName}" \
+      --zone "${zone}" \
       --username "admin" \
-      --cluster-version "1.12.7-gke.10" \
-      --machine-type "n1-standard-2" \
+      --cluster-version ${clusterVersion} \
+      --machine-type "${machineType}" \
       --image-type "UBUNTU" \
       --disk-type "pd-standard" \
       --disk-size "100" \
       --metadata disable-legacy-endpoints=true \
       --scopes "https://www.googleapis.com/auth/devstorage.read_only","https://www.googleapis.com/auth/logging.write","https://www.googleapis.com/auth/monitoring","https://www.googleapis.com/auth/servicecontrol","https://www.googleapis.com/auth/service.management.readonly","https://www.googleapis.com/auth/trace.append" \
-      --num-nodes "3" \
+      --num-nodes "${defPoolSize}" \
       --enable-cloud-logging \
       --enable-cloud-monitoring \
       --no-enable-ip-alias \
@@ -48,17 +55,17 @@ gcloud beta container \
  && gcloud beta container \
       --project "container-solutions-workshops" \
       node-pools create "pool-1" \
-      --cluster "workshop" \
-      --zone "europe-west3-b" \
-      --node-version "1.12.7-gke.10" \
-      --machine-type "n1-standard-2" \
+      --cluster "${clusterName}" \
+      --zone "${zone}" \
+      --node-version ${clusterVersion} \
+      --machine-type "${machineType}" \
       --image-type "UBUNTU" \
       --disk-type "pd-standard" \
       --disk-size "100" \
       --metadata disable-legacy-endpoints=true \
       --scopes "https://www.googleapis.com/auth/devstorage.read_only","https://www.googleapis.com/auth/logging.write","https://www.googleapis.com/auth/monitoring","https://www.googleapis.com/auth/servicecontrol","https://www.googleapis.com/auth/service.management.readonly","https://www.googleapis.com/auth/trace.append" \
       --preemptible \
-      --num-nodes "3" \
+      --num-nodes "${preemPoolSize}" \
       --no-enable-autoupgrade \
       --enable-autorepair
 ```
@@ -70,7 +77,7 @@ gcloud container clusters list
 
 get kubectl credentials
 ```
-gcloud container clusters get-credentials workshop --zone=europe-west3-b
+gcloud container clusters get-credentials workshop --zone=${zone}
 ```
 ## Starting Workshop infra on gke
 
