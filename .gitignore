@@ -1,2 +1,7 @@
 config-*.yaml
 .profile*
+plugins
+.vscode
+kustom
+.plugn
+config-*
