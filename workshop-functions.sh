@@ -127,6 +127,8 @@ depl() {
   : ${domain:=k8z.eu}
   : ${namespace:? required}
   : ${gitrepo:? required}
+  : ${sessionSecret:=cloudnative1337}
+  
   local name=${namespace}
 
 cat <<EOF
@@ -157,7 +159,7 @@ spec:
       - args:
         - gotty
         - "-w"
-        - "-r"
+        - "--credential=user:${sessionSecret}"
         - "--title-format=${name}"
         #- tmux
         - bash
@@ -258,12 +260,9 @@ get-url() {
     declare deployment=${1}
 
     : ${deployment:? required}
-    pod=$(kubectl get po -lrun=${deployment} -o jsonpath='{.items[0].metadata.name}')
-    rndPath=$(kubectl logs ${pod} |sed -n '/HTTP server is listening at/ s/.*:8080//p')
 
-    sessionurl=$(kubectl get deployments. ${deployment} -o jsonpath='{.metadata.annotations.sessionurl}')
-    newSessionUrl="${sessionurl%/*/}${rndPath}"
-    kubectl annotate deployments ${deployment} --overwrite sessionurl="${newSessionUrl}"
+    sessionUrl=http://${deployment}.${domain}/
+    kubectl annotate deployments ${deployment} --overwrite sessionurl="${sessionUrl}"
     
     externalip=$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type == "ExternalIP")].address}') 
     nodePort=$(kubectl get svc ${deployment} -o jsonpath="{.spec.ports[0].nodePort}")
@@ -271,7 +270,9 @@ get-url() {
     kubectl annotate deployments ${deployment} --overwrite sessionurlnp=${sessionUrlNodePort}
 
     echo "open ${sessionUrlNodePort}"
-    echo "open ${newSessionUrl}"
+    echo "open ${sessionUrl}"
+
+}
 
 }
 
@@ -351,12 +352,9 @@ clean-user() {
 }
 
 list-sessions() {
-  echo === unassigned sessions:
-  kubectl get deployments --all-namespaces -l 'user,!ghuser'
-  echo === assigned sessions:
   kubectl get deployments \
     --all-namespaces \
-    -l ghuser \
+    -l user \
     -o custom-columns='NAME:.metadata.name,GHUSER:.metadata.labels.ghuser,URL1:.metadata.annotations.sessionurl,URL2:.metadata.annotations.sessionurlnp'
 }
 
