@@ -426,8 +426,7 @@ EOF
       --metadata disable-legacy-endpoints=true \
       --scopes "https://www.googleapis.com/auth/devstorage.read_only","https://www.googleapis.com/auth/logging.write","https://www.googleapis.com/auth/monitoring","https://www.googleapis.com/auth/servicecontrol","https://www.googleapis.com/auth/service.management.readonly","https://www.googleapis.com/auth/trace.append" \
       --num-nodes "${defPoolSize}" \
-      --enable-cloud-logging \
-      --enable-cloud-monitoring \
+      --enable-stackdriver-kubernetes \
       --no-enable-ip-alias \
       --network "projects/container-solutions-workshops/global/networks/default" \
       --addons HorizontalPodAutoscaling \
