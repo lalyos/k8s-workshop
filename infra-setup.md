@@ -48,8 +48,7 @@ gcloud beta container \
       --enable-cloud-monitoring \
       --no-enable-ip-alias \
       --network "projects/container-solutions-workshops/global/networks/default" \
-      --addons HorizontalPodAutoscaling,HttpLoadBalancing,Istio \
-      --istio-config auth=MTLS_PERMISSIVE \
+      --addons HorizontalPodAutoscaling \
       --enable-autoupgrade \
       --enable-autorepair \
  && gcloud beta container \
@@ -119,11 +118,7 @@ Therefore :
 init-ingress
 ```
 
-Disabling the LoadBalancer is a manual step, you have to perform in Cloud console.
-The script will check, and in case its not disabled yet, it will give
-you instructions how to disable it on the UI.
-
-If istio add-on is enabled than this step can take a couple of minutes ...
+The script will install the offitial nginx ingress controller.
 To check that your cluster is available after the changes list nodes:
 
 ```
