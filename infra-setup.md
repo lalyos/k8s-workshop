@@ -7,6 +7,8 @@ Just use this url: [CloudShell](https://console.cloud.google.com/cloudshell/open
 
 ## ChangeLog 2019-10-25
 
+- cluster creation is moved to a function `start-cluster`
+- start-cluster and related config values are configurable in `.profile`
 - basic auth for session urls (instead of random path prefix) - username: "user" passwd:[see variable](https://github.com/lalyos/k8s-workshop/blob/master/workshop-functions.sh#L130)
 - uses latest available k8s version - see: [commit](https://github.com/lalyos/k8s-workshop/commit/3b1f59f8f444de8daacfd8d48e9efbd05c0773d4#diff-9cdb5a52952540ea9fa5d98c22de2c80R28)
 - cluster is configurable via environment variables:
@@ -18,66 +20,37 @@ Just use this url: [CloudShell](https://console.cloud.google.com/cloudshell/open
 
 ## Configure Project
 
+GCP sdk is used to perform cluster creation. The minimum you need is to set the
+active project:
 ```
 gcloud config set project  container-solutions-workshops
 ```
 
-list existing clusters
-
+check for existing clusters:
 ```
 gcloud container clusters list
 ```
 
-## start a new clusters
+## Start a new clusters
 
 Lets start a 6 node cluster:
 - default node pool with 3 instances
 - second pool with 3 preemptible instances
 
+You can change all default values in your profile.
 ```
-echo ${clusterName:=workshop}
-echo ${clusterVersion:=$(gcloud container get-server-config  --format="value(validMasterVersions[0])" 2>/dev/null)}
-echo ${machineType:=n1-standard-2}
-echo ${defPoolSize:=3}
-echo ${preemPoolSize:=3}
-echo ${zone:=europe-west3-b}
+cp .profile-example .profile
+```
 
-gcloud beta container \
-      --project "container-solutions-workshops" \
-      clusters create "${clusterName}" \
-      --zone "${zone}" \
-      --username "admin" \
-      --cluster-version ${clusterVersion} \
-      --machine-type "${machineType}" \
-      --image-type "UBUNTU" \
-      --disk-type "pd-standard" \
-      --disk-size "100" \
-      --metadata disable-legacy-endpoints=true \
-      --scopes "https://www.googleapis.com/auth/devstorage.read_only","https://www.googleapis.com/auth/logging.write","https://www.googleapis.com/auth/monitoring","https://www.googleapis.com/auth/servicecontrol","https://www.googleapis.com/auth/service.management.readonly","https://www.googleapis.com/auth/trace.append" \
-      --num-nodes "${defPoolSize}" \
-      --enable-cloud-logging \
-      --enable-cloud-monitoring \
-      --no-enable-ip-alias \
-      --network "projects/container-solutions-workshops/global/networks/default" \
-      --addons HorizontalPodAutoscaling \
-      --enable-autoupgrade \
-      --enable-autorepair \
- && gcloud beta container \
-      --project "container-solutions-workshops" \
-      node-pools create "pool-1" \
-      --cluster "${clusterName}" \
-      --zone "${zone}" \
-      --node-version ${clusterVersion} \
-      --machine-type "${machineType}" \
-      --image-type "UBUNTU" \
-      --disk-type "pd-standard" \
-      --disk-size "100" \
-      --metadata disable-legacy-endpoints=true \
-      --scopes "https://www.googleapis.com/auth/devstorage.read_only","https://www.googleapis.com/auth/logging.write","https://www.googleapis.com/auth/monitoring","https://www.googleapis.com/auth/servicecontrol","https://www.googleapis.com/auth/service.management.readonly","https://www.googleapis.com/auth/trace.append" \
-      --preemptible \
-      --num-nodes "${preemPoolSize}" \
-      --no-enable-autoupgrade \
-      --enable-autorepair
+To load all helper functions (and activate/source you profile)
+```
+source workshop-functions.sh
+```
+
+Now you can create the GKE cluster. All config will be printed,
+and you have a chance to review and cancel.
+```
+start-cluster
 ```
 
 checking the GKE cluster 
@@ -89,24 +62,10 @@ get kubectl credentials
 ```
 gcloud container clusters get-credentials workshop --zone=${zone}
 ```
-## Starting Workshop infra on gke
-
-You need to set up the following 2 env vars:
-```
-export workshopNamespace=workshop
-export domain=k8z.eu
-export gitrepo=https://github.com/lalyos/timber
-```
-
-First you have to load the helper bash functions:
-```
-source workshop-functions.sh
-```
 
 ## Initial setup
 
-At the begining you have to create some cluster roles ...
-
+At the begining you have to create some cluster roles :
 ```
 init
 ```

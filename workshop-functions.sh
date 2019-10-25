@@ -394,6 +394,65 @@ EOF
     echo "---> set external dns A record (*.${domain}) to: $ingressip"
   fi
 }
+
+start-cluster() {
+  [[ -e .profile ]] && source .profile || true
+
+  cat << EOF
+=== cluster config ===
+  clusterName:    ${clusterName:=workshop}
+  domain:         ${domain}
+  clusterVersion: ${clusterVersion:=$(gcloud container get-server-config  --format="value(validMasterVersions[0])" 2>/dev/null)}
+  machineType:    ${machineType:=n1-standard-2}
+  defPoolSize:    ${defPoolSize:=3}
+  preemPoolSize:  ${preemPoolSize:=3}
+  zone:           ${zone:=europe-west3-b}
+
+EOF
+
+  echo "Please press <ENTER> to continue, or CTRL-C to change value in .profile"
+  read line
+
+  gcloud beta container \
+      --project "container-solutions-workshops" \
+      clusters create "${clusterName}" \
+      --zone "${zone}" \
+      --username "admin" \
+      --cluster-version ${clusterVersion} \
+      --machine-type "${machineType}" \
+      --image-type "UBUNTU" \
+      --disk-type "pd-standard" \
+      --disk-size "100" \
+      --metadata disable-legacy-endpoints=true \
+      --scopes "https://www.googleapis.com/auth/devstorage.read_only","https://www.googleapis.com/auth/logging.write","https://www.googleapis.com/auth/monitoring","https://www.googleapis.com/auth/servicecontrol","https://www.googleapis.com/auth/service.management.readonly","https://www.googleapis.com/auth/trace.append" \
+      --num-nodes "${defPoolSize}" \
+      --enable-cloud-logging \
+      --enable-cloud-monitoring \
+      --no-enable-ip-alias \
+      --network "projects/container-solutions-workshops/global/networks/default" \
+      --addons HorizontalPodAutoscaling \
+      --enable-autoupgrade \
+      --enable-autorepair \
+ && gcloud beta container \
+      --project "container-solutions-workshops" \
+      node-pools create "pool-1" \
+      --cluster "${clusterName}" \
+      --zone "${zone}" \
+      --node-version ${clusterVersion} \
+      --machine-type "${machineType}" \
+      --image-type "UBUNTU" \
+      --disk-type "pd-standard" \
+      --disk-size "100" \
+      --metadata disable-legacy-endpoints=true \
+      --scopes "https://www.googleapis.com/auth/devstorage.read_only","https://www.googleapis.com/auth/logging.write","https://www.googleapis.com/auth/monitoring","https://www.googleapis.com/auth/servicecontrol","https://www.googleapis.com/auth/service.management.readonly","https://www.googleapis.com/auth/trace.append" \
+      --preemptible \
+      --num-nodes "${preemPoolSize}" \
+      --no-enable-autoupgrade \
+      --enable-autorepair
+}
+
+[[ -e .profile ]] && source .profile || true
+
 main() {
   : DEBUG=1
   init

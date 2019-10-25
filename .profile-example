@@ -1,0 +1,12 @@
+# basic config:
+export domain=training.csol.cloud
+export zone=europe-west3-b
+export workshopNamespace=workshop
+
+## change default value if you need:
+# export machineType=n1-standard-2
+# export defPoolSize=3
+# export preemPoolSize=3
+# export sessionSecret=cloudnative1337
+# export clusterName=workshop
+# export gitrepo=https://github.com/ContainerSolutions/timber.git
