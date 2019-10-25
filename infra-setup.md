@@ -5,6 +5,17 @@ preinstalled, and authenticated against the CS account.
 Just use this url: [CloudShell](https://console.cloud.google.com/cloudshell/open?git_repo=https://github.com/lalyos/k8s-workshop&tutorial=infra-setup.md
 )
 
+## ChangeLog 2019-10-25
+
+- basic auth for session urls (instead of random path prefix) - username: "user" passwd:[see variable](https://github.com/lalyos/k8s-workshop/blob/master/workshop-functions.sh#L130)
+- uses latest available k8s version - see: [commit](https://github.com/lalyos/k8s-workshop/commit/3b1f59f8f444de8daacfd8d48e9efbd05c0773d4#diff-9cdb5a52952540ea9fa5d98c22de2c80R28)
+- cluster is configurable via environment variables:
+  - machineType (n1-standard-2)
+  - defPoolSize (3)
+  - preemPoolSize (3)
+  - zone (europe-west3-b)
+- istio and http lb is switched of by default (speedup start) - see: 403bc36d8c25f6173e04b8fca0d1a0c5a96c1601
+
 ## Configure Project
 
 ```
