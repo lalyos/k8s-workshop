@@ -88,7 +88,7 @@ Therefore :
 init-ingress
 ```
 
-The script will install the offitial nginx ingress controller.
+The script will install the official nginx ingress controller.
 To check that your cluster is available after the changes list nodes:
 
 ```
@@ -130,8 +130,7 @@ To make user sessions available via ssh, first deploy the single ssh proxy to th
 init-sshfront
 ```
 
-To configure ssh pubkeys per user, inside the session issue the `ssh-pubkey` command.
-It can take the pubkey from 2 sources:
+To configure ssh pubkeys, each user has to issue the `ssh-pubkey` command inside the session. It can take the pubkey from 2 sources:
 - github
 - stdin
 
@@ -143,4 +142,11 @@ ssh-pubkey <GITHUB_USERNAME>
 Or you can echo/curl your public key and pipe it to the `ssh-pubkey` command:
 ```
 echo 'ssh-rsa AAAAB3NzaC1yc....gqvp1+Pil/4BWunWnXi3jT' | ssh-pubkey
+```
+
+On success the command will print the ssh command to use
+```
+configmap/ssh configured
+You can now connect via:
+  ssh userX@42.246.111.222 -p 31723
 ```
