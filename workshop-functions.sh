@@ -400,7 +400,7 @@ EOF
   ingressip=$(kubectl get svc -n ingress-nginx ingress-nginx -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
 
   echo "---> checking DNS A record (*.${domain}) points to: $ingressip ..." 
-  if [[ $(dig +short *.${domain}) == $ingressip ]] ; then 
+  if [[ $(dig +short "*.${domain}") == $ingressip ]] ; then 
     echo "DNS setting are ok"
   else 
     echo "---> set external dns A record (*.${domain}) to: $ingressip"
