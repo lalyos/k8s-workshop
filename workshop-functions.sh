@@ -126,8 +126,7 @@ depl() {
   declare namespace=${1}
   : ${domain:=k8z.eu}
   : ${namespace:? required}
-  : ${gitrepo:=https://github.com/ContainerSolutions/ws-kubernetes-essentials-app.git}
-
+  : ${gitrepo:? required}
   local name=${namespace}
 
 cat <<EOF
@@ -279,7 +278,7 @@ get-url() {
 init() {
     : ${userEmail:=$(gcloud auth list --format="value(account)" --filter=status:ACTIV 2>/dev/null)}
     : ${workshopNamespace:=workshop}
-    : ${gitrepo:=https://github.com/ContainerSolutions/ws-kubernetes-essentials-app.git}
+    : ${gitrepo:=https://github.com/ContainerSolutions/timber.git}
 
     workshop-context
     init-firewall
