@@ -103,7 +103,9 @@ namespace() {
     kubectl label clusterrolebinding crb-${namespace} user=${namespace} 
     kubectl create clusterrolebinding crb-cc-${namespace} --clusterrole=common-config --serviceaccount=${workshopNamespace}:sa-${namespace}
     kubectl label clusterrolebinding crb-cc-${namespace} user=${namespace} 
-    
+
+    kubectl create clusterrolebinding crb-ssh-${namespace} --clusterrole=sshreader --serviceaccount=${workshopNamespace}:sa-${namespace}
+    kubectl label clusterrolebinding crb-ssh-${namespace} user=${namespace}  
 }
 
 enable-namespaces() {
@@ -306,6 +308,7 @@ init() {
     # prj=$(gcloud config get-value project 2>/dev/null)
     # gcloud projects add-iam-policy-binding $prj --member=$userEmail --role=roles/container.admin
 
+    ## all user can list nodes/ns
     if ! kubectl get clusterrole lister &> /dev/null; then
       kubectl create clusterrole lister \
         --verb=get,list,watch \
@@ -313,12 +316,21 @@ init() {
         kubectl label clusterrole lister user=workshop
     fi
 
+    ## all user can read a common configMap
     if ! kubectl get clusterrole common-config &> /dev/null; then
       kubectl create clusterrole common-config \
         --verb=list,get,watch \
         --resource=configmaps \
         --resource-name=common
         kubectl label clusterrole common-config user=workshop
+    fi
+
+    ## all user can get the nodeport of sshfront svc
+    if ! kubectl get clusterrole sshreader &> /dev/null; then
+      kubectl create clusterrole sshreader \
+      --resource=service \
+      --verb=list,get \
+      --resource-name=sshfront
     fi
 }
 
@@ -407,6 +419,14 @@ EOF
   fi
 }
 
+
+init-sshfront() {
+  : ${workshopNamespace:? required}
+
+  kubectl apply -f https://raw.githubusercontent.com/lalyos/k8s-sshfront/master/sshfront.yaml
+  #kubectl create clusterrolebinding crb-sshfront --clusterrole=cluster-admin --serviceaccount=${workshopNamespace}:config-reader
+}
+
 start-cluster() {
   [[ -e .profile ]] && source .profile || true
 
@@ -467,5 +487,5 @@ EOF
 main() {
   : DEBUG=1
   init
-
+  init-sshfront
 }
