@@ -274,6 +274,18 @@ get-url() {
 
 }
 
+switchNs() {
+  actualNs=$(kubectl config view --minify -o jsonpath='{.contexts[0].context.namespace}')
+  local ns=${1:-$oldNs}
+  : ${ns:? required}
+
+  # no parameter or "-"" switches back to previous
+  if [[ "$ns" == '-' ]]; then
+    ns=${oldNs}
+  fi
+  oldNs=${actualNs}
+  echo "---> switching to: ${ns}"
+  kubectl config set-context $(kubectl config current-context ) --namespace ${ns}
 }
 
 init() {
