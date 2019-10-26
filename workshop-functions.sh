@@ -427,23 +427,35 @@ init-sshfront() {
   #kubectl create clusterrolebinding crb-sshfront --clusterrole=cluster-admin --serviceaccount=${workshopNamespace}:config-reader
 }
 
-start-cluster() {
+
+confirm-config() {
   [[ -e .profile ]] && source .profile || true
 
   cat << EOF
 === cluster config ===
-  clusterName:    ${clusterName:=workshop}
+  clusterName:    ${clusterName}
   domain:         ${domain}
-  clusterVersion: ${clusterVersion:=$(gcloud container get-server-config  --format="value(validMasterVersions[0])" 2>/dev/null)}
-  machineType:    ${machineType:=n1-standard-2}
-  defPoolSize:    ${defPoolSize:=3}
-  preemPoolSize:  ${preemPoolSize:=3}
-  zone:           ${zone:=europe-west3-b}
-
+  clusterVersion: ${clusterVersion}
+  machineType:    ${machineType}
+  defPoolSize:    ${defPoolSize}
+  preemPoolSize:  ${preemPoolSize}
+  zone:           ${zone}
 EOF
-
   echo "Please press <ENTER> to continue, or CTRL-C to change value in .profile"
   read line
+}
+
+start-cluster() {
+
+  : ${clusterName:=workshop}
+  : ${domain}
+  : ${zone:=europe-west3-b}
+  : ${clusterVersion:=$(gcloud container get-server-config --zone ${zone} --format="value(validMasterVersions[0])" 2>/dev/null)}
+  : ${machineType:=n1-standard-2}
+  : ${defPoolSize:=3}
+  : ${preemPoolSize:=3}
+
+  confirm-config
 
   gcloud beta container \
       --project "container-solutions-workshops" \
