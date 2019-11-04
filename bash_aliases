@@ -87,6 +87,17 @@ zed() {
   zedrem -u $CM_ZED &
 }
 
+prompt() {
+  if grep promptline -q <<< "$PROMPT_COMMAND"; then
+    unset PROMPT_COMMAND
+    PS1=${PS1_ORIG:-$}
+  else
+	  PS1_ORIG="$PS1"
+    . ~/.prompt.sh
+  fi
+}
+prompt
+
 cd
 common-env &> /dev/null
 
