@@ -20,6 +20,38 @@ kind: Role
 apiVersion: rbac.authorization.k8s.io/v1beta1
 metadata:
   name: role-${namespace}
+  namespace: istio-system
+  labels:
+    user: "${namespace}"
+rules:
+- apiGroups: [""]
+  resources:
+  - services
+  - pods
+  verbs:
+  - get
+  - list
+---
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1beta1
+metadata:
+  name: rb-${namespace}
+  namespace: istio-system
+  labels:
+    user: "${namespace}"
+subjects:
+- kind: ServiceAccount
+  name: sa-${namespace}
+  namespace: ${workshopNamespace}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: role-${namespace}
+---
+kind: Role
+apiVersion: rbac.authorization.k8s.io/v1beta1
+metadata:
+  name: role-${namespace}
   namespace: ${namespace}
   labels:
     user: "${namespace}"
@@ -103,6 +135,7 @@ namespace() {
 
     kubectl create ns ${namespace}
     kubectl label ns ${namespace} user=${namespace} 
+    kubectl label ns ${namespace} istio-injection=enabled
     assign-role-to-ns ${namespace} | kubectl create -f -
 
     kubectl create clusterrolebinding crb-${namespace} --clusterrole=lister --serviceaccount=${workshopNamespace}:sa-${namespace}
@@ -140,6 +173,21 @@ depl() {
   local name=${namespace}
 
 cat <<EOF
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  labels:
+    user: "${namespace}"
+    run: ${name}
+  name: ${name}-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 512M
+---
 apiVersion: apps/v1beta1
 kind: Deployment
 metadata:
@@ -159,17 +207,36 @@ spec:
     spec:
       serviceAccountName: sa-${name}
       volumes:
+        - name: storage
+          persistentVolumeClaim:
+            claimName: ${name}-pvc
         - name: gitrepo
           gitRepo:
             repository: ${gitrepo}
             directory: .
+      initContainers:
+      - name: copy-repo-to-storage
+        image: busybox:1.28
+        command: ['sh', '-c', 'cp -rf /tmp/repo /tmp/storage && chown -R 1000:1000 /tmp/storage']
+        volumeMounts:
+          - mountPath: /tmp/repo
+            name: gitrepo
+          - mountPath: /tmp/storage
+            name: storage
       containers:
+      - image: codercom/code-server:v2
+        args:
+          - "--auth=none"
+          - "--port=8181"
+        name: vscode
+        volumeMounts:
+          - mountPath: /home/coder/workshop
+            name: storage
       - args:
         - gotty
         - "-w"
         - "--credential=user:${sessionSecret}"
         - "--title-format=${name}"
-        #- tmux
         - bash
         env:
           - name: NS
@@ -190,7 +257,7 @@ spec:
         name: dev
         volumeMounts:
           - mountPath: /root/workshop
-            name: gitrepo 
+            name: storage
 ---
 apiVersion: v1
 kind: Service
@@ -201,9 +268,14 @@ metadata:
   name: ${name}
 spec:
   ports:
-  - port: 8080
+  - name: shell
+    port: 8080
     protocol: TCP
     targetPort: 8080
+  - name: ide
+    port: 8181
+    protocol: TCP
+    targetPort: 8181
   selector:
     run: ${name}
   type: NodePort
@@ -212,13 +284,21 @@ apiVersion: extensions/v1beta1
 kind: Ingress
 metadata:
   annotations:
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
     nginx.org/websocket-services: ${name}
   labels:
     user: "${namespace}"
   name: ${name} 
 spec:
   rules:
-  - host: ${name}.${domain}
+  - host: ide.${name}.${domain}
+    http:
+      paths:
+      - backend:
+          serviceName: ${name}
+          servicePort: 8181
+  - host: shell.${name}.${domain}
     http:
       paths:
       - backend:
@@ -268,19 +348,21 @@ get-url() {
     declare deployment=${1}
 
     : ${deployment:? required}
+    pod=$(kubectl get po -lrun=${deployment} -o jsonpath='{.items[0].metadata.name}')
 
-    sessionUrl=http://${deployment}.${domain}/
-    kubectl annotate deployments ${deployment} --overwrite sessionurl="${sessionUrl}"
+    sessionurl=$(kubectl get deployments. ${deployment} -o jsonpath='{.metadata.annotations.sessionurl}')
+    newSessionUrl="${sessionurl%/*/}"
+    kubectl annotate deployments ${deployment} --overwrite sessionurl="${newSessionUrl}"
     
     externalip=$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type == "ExternalIP")].address}') 
-    nodePort=$(kubectl get svc ${deployment} -o jsonpath="{.spec.ports[0].nodePort}")
-    sessionUrlNodePort="http://${externalip}:${nodePort}${rndPath}"
-    kubectl annotate deployments ${deployment} --overwrite sessionurlnp=${sessionUrlNodePort}
+    nodePortShell=$(kubectl get svc ${deployment} -o jsonpath="{.spec.ports[0].nodePort}")
+    nodePortIde=$(kubectl get svc ${deployment} -o jsonpath="{.spec.ports[1].nodePort}")
+    sessionUrlNodePort="http://${externalip}:${nodePortShell}"
+    sessionUrlNodePortIde="http://${externalip}:${nodePortIde}"
+    kubectl annotate deployments ${deployment} --overwrite sessionurlnp=${nodePortShell}
 
-    echo "open ${sessionUrlNodePort}"
-    echo "open ${sessionUrl}"
-
-}
+    echo "open shell ${sessionUrlNodePort}"
+    echo "open ide ${sessionUrlNodePortIde}"
 
 switchNs() {
   actualNs=$(kubectl config view --minify -o jsonpath='{.contexts[0].context.namespace}')
@@ -378,7 +460,7 @@ clean-user() {
     ns=$1;
     : ${ns:?required};
 
-    kubectl delete all,ns,sa,clusterrolebinding,ing -l "user in (${ns},${ns}play)"
+    kubectl delete all,ns,sa,clusterrolebinding,ing,pv,pvc -l "user in (${ns},${ns}play)"
 }
 
 list-sessions() {

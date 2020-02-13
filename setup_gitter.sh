@@ -1,6 +1,11 @@
 #!/bin/bash
 
-# 
+##
+#
+# Don't forget to create/update gitter.env file 
+# and update gitter room 
+#
+##
 export workshopNamespace=workshop
 export gitterRoom="ContainerSolutions/warsaw-workshop"
 
