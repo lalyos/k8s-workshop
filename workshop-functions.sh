@@ -541,9 +541,8 @@ start-cluster() {
       --preemptible \
       --num-nodes "${preemPoolSize}" \
       --no-enable-autoupgrade \
-      --enable-autorepair
-
-      gcloud  container clusters get-credentials "${clusterName}" --project "${project_id}" --zone "${zone}"
+      --enable-autorepair \
+  && gcloud  container clusters get-credentials "${clusterName}" --project "${project_id}" --zone "${zone}"
 
 }
 
@@ -554,8 +553,6 @@ setup-gitter() {
    : ${GITTER_OAUTH_KEY:? required}
    : ${GITTER_OAUTH_SECRET:? required}
 
-
-    echo "Import gitter keys from gitter.env"
     echo "Create secrets"
     kubectl create secret generic gitter \
       --from-literal=GITTER_OAUTH_KEY=$GITTER_OAUTH_KEY \
