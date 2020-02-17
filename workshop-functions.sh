@@ -324,6 +324,7 @@ get-url() {
 
     echo "open shell ${sessionUrlNodePort}"
     echo "open ide ${sessionUrlNodePortIde}"
+}
 
 switchNs() {
   actualNs=$(kubectl config view --minify -o jsonpath='{.contexts[0].context.namespace}')
@@ -542,7 +543,7 @@ start-cluster() {
       --num-nodes "${preemPoolSize}" \
       --no-enable-autoupgrade \
       --enable-autorepair \
-  && gcloud  container clusters get-credentials "${clusterName}" --project "${project_id}" --zone "${zone}"
+  && gcloud container clusters get-credentials "${clusterName}" --project "${project_id}" --zone "${zone}"
 
 }
 
@@ -564,7 +565,7 @@ setup-gitter() {
 
     kubectl patch deployments gitter --patch '{"spec":{"template":{"spec":{"$setElementOrder/containers":[{"name":"gitter"}],"containers":[{"$setElementOrder/env":[{"name":"GITTER_ROOM_NAME"},{"name":"DOMAIN"}],"env":[{"name":"GITTER_ROOM_NAME","value":"'${gitterRoom}'"}],"name":"gitter"}]}}}}'
 
-}}
+}
 
 [[ -e .profile ]] && source .profile || true
 
@@ -573,3 +574,4 @@ main() {
   init
   init-sshfront
 }
+
