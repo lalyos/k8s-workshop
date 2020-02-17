@@ -20,38 +20,6 @@ kind: Role
 apiVersion: rbac.authorization.k8s.io/v1beta1
 metadata:
   name: role-${namespace}
-  namespace: istio-system
-  labels:
-    user: "${namespace}"
-rules:
-- apiGroups: [""]
-  resources:
-  - services
-  - pods
-  verbs:
-  - get
-  - list
----
-kind: RoleBinding
-apiVersion: rbac.authorization.k8s.io/v1beta1
-metadata:
-  name: rb-${namespace}
-  namespace: istio-system
-  labels:
-    user: "${namespace}"
-subjects:
-- kind: ServiceAccount
-  name: sa-${namespace}
-  namespace: ${workshopNamespace}
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: Role
-  name: role-${namespace}
----
-kind: Role
-apiVersion: rbac.authorization.k8s.io/v1beta1
-metadata:
-  name: role-${namespace}
   namespace: ${namespace}
   labels:
     user: "${namespace}"
@@ -63,12 +31,6 @@ rules:
   resources:
   - jobs
   - cronjobs
-  verbs: ["*"]
-- apiGroups: ["networking.istio.io"]
-  resources:
-  - virtualservices
-  - gateways
-  - destinationrules
   verbs: ["*"]
 - apiGroups: ["rbac.authorization.k8s.io"]
   resources:
@@ -109,7 +71,7 @@ metadata:
 subjects:
 - kind: ServiceAccount
   name: default
-  namespace: ${mamespace}
+  namespace: ${namespace}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
@@ -135,7 +97,6 @@ namespace() {
 
     kubectl create ns ${namespace}
     kubectl label ns ${namespace} user=${namespace} 
-    kubectl label ns ${namespace} istio-injection=enabled
     assign-role-to-ns ${namespace} | kubectl create -f -
 
     kubectl create clusterrolebinding crb-${namespace} --clusterrole=lister --serviceaccount=${workshopNamespace}:sa-${namespace}
@@ -543,10 +504,11 @@ start-cluster() {
   : ${defPoolSize:=3}
   : ${preemPoolSize:=3}
 
+  project_id="container-solutions-workshops"
   confirm-config
 
   gcloud beta container \
-      --project "container-solutions-workshops" \
+      --project "${project_id}" \
       clusters create "${clusterName}" \
       --zone "${zone}" \
       --username "admin" \
@@ -565,7 +527,7 @@ start-cluster() {
       --enable-autoupgrade \
       --enable-autorepair \
  && gcloud beta container \
-      --project "container-solutions-workshops" \
+      --project "${project_id}" \
       node-pools create "pool-1" \
       --cluster "${clusterName}" \
       --zone "${zone}" \
@@ -580,7 +542,32 @@ start-cluster() {
       --num-nodes "${preemPoolSize}" \
       --no-enable-autoupgrade \
       --enable-autorepair
+
+      gcloud  container clusters get-credentials "${clusterName}" --project "${project_id}" --zone "${zone}"
+
 }
+
+setup-gitter() {
+
+   : ${workshopNamespace:? required}
+   : ${gitterRoom:? required}
+   : ${GITTER_OAUTH_KEY:? required}
+   : ${GITTER_OAUTH_SECRET:? required}
+
+
+    echo "Import gitter keys from gitter.env"
+    echo "Create secrets"
+    kubectl create secret generic gitter \
+      --from-literal=GITTER_OAUTH_KEY=$GITTER_OAUTH_KEY \
+      --from-literal=GITTER_OAUTH_SECRET=$GITTER_OAUTH_SECRET
+
+    curl -sL https://raw.githubusercontent.com/lalyos/gitter-scripter/master/gitter-template.yaml \
+      | envsubst \
+      | kubectl apply -f -
+
+    kubectl patch deployments gitter --patch '{"spec":{"template":{"spec":{"$setElementOrder/containers":[{"name":"gitter"}],"containers":[{"$setElementOrder/env":[{"name":"GITTER_ROOM_NAME"},{"name":"DOMAIN"}],"env":[{"name":"GITTER_ROOM_NAME","value":"'${gitterRoom}'"}],"name":"gitter"}]}}}}'
+
+}}
 
 [[ -e .profile ]] && source .profile || true
 
