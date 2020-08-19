@@ -5,89 +5,67 @@ preinstalled, and authenticated against the CS account.
 Just use this url: [CloudShell](https://console.cloud.google.com/cloudshell/open?git_repo=https://github.com/lalyos/k8s-workshop&tutorial=infra-setup.md
 )
 
+## ChangeLog 2019-10-25
+
+- cluster creation is moved to a function `start-cluster`
+- start-cluster and related config values are configurable in `.profile`
+- basic auth for session urls (instead of random path prefix) - username: "user" passwd:[see variable](https://github.com/lalyos/k8s-workshop/blob/master/workshop-functions.sh#L130)
+- uses latest available k8s version - see: [commit](https://github.com/lalyos/k8s-workshop/commit/3b1f59f8f444de8daacfd8d48e9efbd05c0773d4#diff-9cdb5a52952540ea9fa5d98c22de2c80R28)
+- cluster is configurable via environment variables:
+  - machineType (n1-standard-2)
+  - defPoolSize (3)
+  - preemPoolSize (3)
+  - zone (europe-west3-b)
+- istio and http lb is switched of by default (speedup start) - see: 403bc36d8c25f6173e04b8fca0d1a0c5a96c1601
+
 ## Configure Project
 
+GCP sdk is used to perform cluster creation. The minimum you need is to set the
+active project:
 ```
-gcloud config set project container-solutions-workshops
+gcloud config set project  container-solutions-workshops
 ```
 
-list existing clusters
-
+check for existing clusters:
 ```
 gcloud container clusters list
 ```
 
-## start a new clusters
+## Start a new clusters
 
 Lets start a 6 node cluster:
-- default node pool with 3 n1-standard-2 instances
-- second pool with 3 preemptible n1-standard-2 instances
+- default node pool with 3 instances
+- second pool with 3 preemptible instances
 
+You can change all default values in your profile.
 ```
-gcloud beta container \
-      --project "container-solutions-workshops" \
-      clusters create "workshop" \
-      --zone "europe-west3-b" \
-      --username "admin" \
-      --cluster-version "1.13.10-gke.0" \
-      --machine-type "n1-standard-2" \
-      --image-type "UBUNTU" \
-      --disk-type "pd-standard" \
-      --disk-size "100" \
-      --metadata disable-legacy-endpoints=true \
-      --scopes "https://www.googleapis.com/auth/devstorage.read_only","https://www.googleapis.com/auth/logging.write","https://www.googleapis.com/auth/monitoring","https://www.googleapis.com/auth/servicecontrol","https://www.googleapis.com/auth/service.management.readonly","https://www.googleapis.com/auth/trace.append" \
-      --num-nodes "4" \
-      --enable-cloud-logging \
-      --no-enable-ip-alias \
-      --network "projects/container-solutions-workshops/global/networks/default" \
-      --addons HorizontalPodAutoscaling,HttpLoadBalancing \
-      --enable-autoupgrade \
-      --enable-autorepair \
- && gcloud beta container \
-      --project "container-solutions-workshops" \
-      node-pools create "pool-1" \
-      --cluster "workshop" \
-      --zone "europe-west3-b" \
-      --node-version "1.13.10-gke.0" \
-      --machine-type "n1-standard-2" \
-      --image-type "UBUNTU" \
-      --disk-type "pd-standard" \
-      --disk-size "100" \
-      --metadata disable-legacy-endpoints=true \
-      --scopes "https://www.googleapis.com/auth/devstorage.read_only","https://www.googleapis.com/auth/logging.write","https://www.googleapis.com/auth/monitoring","https://www.googleapis.com/auth/servicecontrol","https://www.googleapis.com/auth/service.management.readonly","https://www.googleapis.com/auth/trace.append" \
-      --preemptible \
-      --num-nodes "4" \
-      --no-enable-autoupgrade \
-      --enable-autorepair
+cp .profile-example .profile
 ```
 
-checking the GKE cluster
+To load all helper functions (and activate/source you profile)
+```
+source workshop-functions.sh
+```
+
+Now you can create the GKE cluster. All config will be printed,
+and you have a chance to review and cancel.
+```
+start-cluster
+```
+
+checking the GKE cluster 
 ```
 gcloud container clusters list
 ```
 
 get kubectl credentials
 ```
-gcloud container clusters get-credentials workshop --zone=europe-west3-b
-```
-## Starting Workshop infra on gke
-
-You need to set up the following 2 env vars:
-```
-export workshopNamespace=workshop
-export domain=cict.training.csol.cloud
-export gitrepo=https://github.com/ContainerSolutions/timber
-```
-
-First you have to load the helper bash functions:
-```
-source workshop-functions.sh
+gcloud container clusters get-credentials workshop --zone=${zone}
 ```
 
 ## Initial setup
 
-At the begining you have to create some cluster roles ...
-
+At the begining you have to create some cluster roles :
 ```
 init
 ```
@@ -110,11 +88,7 @@ Therefore :
 init-ingress
 ```
 
-Disabling the LoadBalancer is a manual step, you have to perform in Cloud console.
-The script will check, and in case its not disabled yet, it will give
-you instructions how to disable it on the UI.
-
-If istio add-on is enabled than this step can take a couple of minutes ...
+The script will install the official nginx ingress controller.
 To check that your cluster is available after the changes list nodes:
 
 ```
@@ -127,21 +101,10 @@ To check that the nginx ingress is fully deployed, list resources in the **ingre
 kubectl get all -n ingress-nginx
 ```
 
-If your nginx pod is stuck in `Pending` stage, you may be missing the expected label on your nodes. This can be solved with the following command which will apply the expected label to all nodes:
-
-```
-kubectl label node --all kubernetes.io/os=linux
-```
-
 DNS setup
 
  Follow the instructions of `init-ingress` function about the IP adress of the deployed ingress controller.
-
-## Setup Ingress domain
-
-Ensure that the ".training.csol.cloud" domain point to the IP address of the Ingress
-
-https://console.cloud.google.com/net-services/dns/zones/training-csol-cloud?project=container-solutions-workshops&authuser=1&organizationId=879351307558
+ 
 
 ## Create user sessions
 
@@ -154,72 +117,36 @@ Please note, the first couple may take more time, as the docker image should be 
 
 To create more user sssions use the following line
 ```
-for u in user{2..12}; do dev $u; done
+for u in user{2..15}; do dev $u; done
 ```
 
 
 ## Enable ssh
 
-Sometimes the web based sessions are loosing connection. Proxies and websockets sometimes dont like eachother. Ssh to the rescue.
+Sometimes the web based sessions are constantly dropping connection. Proxies and websockets sometimes dont like eachother. Ssh to the rescue.
 
-To make user sessions available as via ssh:
+To make user sessions available via ssh, first deploy the single ssh proxy to the cluster
 ```
-#kubectl apply -f https://raw.githubusercontent.com/lalyos/k8s-sshfront/master/sshfront.yaml
-
-## fix default ns issue
-curl  -s https://raw.githubusercontent.com/lalyos/k8s-sshfront/master/sshfront.yaml \
-  | sed "s/default/$workshopNamespace/" \
-  | kubectl apply -f -
+init-sshfront
 ```
 
-now pods can be accesed via ssh. the following will print instructions:
-```
-echo ssh $(kubectl get no -o jsonpath='{.items[0].status.addresses[?(.type=="ExternalIP")].address}')   -p $(kubectl get svc sshfront -o jsonpath='{.spec.ports[0].nodePort}')   -l PODNAME
-```
+To configure ssh pubkeys, each user has to issue the `ssh-pubkey` command inside the session. It can take the pubkey from 2 sources:
+- github
+- stdin
 
-to get user session authentications 2 steps needed:
-- users itself has to register their ssh publey (store it in a cm by the ssh-pubkey function)
-- admin has to set a common env variable (in the common cm) to point to the ssh svc NodePort.
-
-update the file 'common.env' with something like:
+The easiest way is to relay on github ssh keys (It will install all public ssh keys from github)
 ```
-...
-SSH_DOMAIN=n1.training.csol.cloud
-SSH_PORT=32531
-...
+ssh-pubkey <GITHUB_USERNAME>
 ```
 
-than update and distribute the common env to all user session
+Or you can echo/curl your public key and pipe it to the `ssh-pubkey` command:
 ```
-update-common-env
-```
-
-than users can retrieve the common envs in their session by the **common-env** function
-
-## Self Service portal
-
-After creating the user sessions, its hard to distribute/assign the session urls.
-
-There is a small gitter authentication based web app, where participants can get an unused
-session assigned to them.
-More details and the process toget GITTER credentials is described: https://github.com/lalyos/gitter-scripter
-
-```
-export GITTER_OAUTH_KEY=xxxxxxx
-export GITTER_OAUTH_SECRET=yyyyyyy
-kubectl create secret generic gitter \
-  --from-literal=GITTER_OAUTH_KEY=$GITTER_OAUTH_KEY \
-  --from-literal=GITTER_OAUTH_SECRET=$GITTER_OAUTH_SECRET
-# todo automate setting of gitter room:
-
-export workshopNamespace=workshop
-export domain=training.csol.cloud
-curl -sL https://raw.githubusercontent.com/lalyos/gitter-scripter/master/gitter-template.yaml \
-  | envsubst \
-  | kubectl apply -f -
-
-export gitterRoom=lalyos/earthport
-kubectl patch deployments gitter --patch '{"spec":{"template":{"spec":{"$setElementOrder/containers":[{"name":"gitter"}],"containers":[{"$setElementOrder/env":[{"name":"GITTER_ROOM_NAME"},{"name":"DOMAIN"}],"env":[{"name":"GITTER_ROOM_NAME","value":"'${gitterRoom}'"}],"name":"gitter"}]}}}}'
+echo 'ssh-rsa AAAAB3NzaC1yc....gqvp1+Pil/4BWunWnXi3jT' | ssh-pubkey
 ```
 
-The users can self service at: http://session.training.csol.cloud
+On success the command will print the ssh command to use
+```
+configmap/ssh configured
+You can now connect via:
+  ssh userX@42.246.111.222 -p 31723
+```

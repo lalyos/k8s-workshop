@@ -14,6 +14,7 @@
 #   motd - Message Of The Day (displays this help text)
 #   svc - lists clickable NodePort services and Ingress urls
 #   k - Alias for kubectl with bash autocompletion
+#   prompt - switch on/off fancy prompt
 #
 # start with:
 #   kubectl config get-contexts

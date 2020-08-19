@@ -96,14 +96,16 @@ namespace() {
     : ${workshopNamespace:? required}
 
     kubectl create ns ${namespace}
-    kubectl label ns ${namespace} user=${namespace}
+    kubectl label ns ${namespace} user=${namespace} 
     assign-role-to-ns ${namespace} | kubectl create -f -
 
     kubectl create clusterrolebinding crb-${namespace} --clusterrole=lister --serviceaccount=${workshopNamespace}:sa-${namespace}
-    kubectl label clusterrolebinding crb-${namespace} user=${namespace}
+    kubectl label clusterrolebinding crb-${namespace} user=${namespace} 
     kubectl create clusterrolebinding crb-cc-${namespace} --clusterrole=common-config --serviceaccount=${workshopNamespace}:sa-${namespace}
-    kubectl label clusterrolebinding crb-cc-${namespace} user=${namespace}
+    kubectl label clusterrolebinding crb-cc-${namespace} user=${namespace} 
 
+    kubectl create clusterrolebinding crb-ssh-${namespace} --clusterrole=sshreader --serviceaccount=${workshopNamespace}:sa-${namespace}
+    kubectl label clusterrolebinding crb-ssh-${namespace} user=${namespace}  
 }
 
 enable-namespaces() {
@@ -114,7 +116,7 @@ enable-namespaces() {
     kubectl config set-context $(kubectl config current-context) --namespace=default
     kubectl apply -f https://raw.githubusercontent.com/lalyos/k8s-ns-admission/master/deploy-webhook-job.yaml
     kubectl config set-context $(kubectl config current-context) --namespace=${origns}
-  fi
+  fi 
   kubectl patch clusterrole lister --patch='{"rules":[{"apiGroups":[""],"resources":["nodes","namespaces"],"verbs":["*"]}]}'
 }
 
@@ -124,10 +126,11 @@ disable-namespaces() {
 
 depl() {
   declare namespace=${1}
-  : ${domain:=training.csol.cloud}
+  : ${domain:=k8z.eu}
   : ${namespace:? required}
-  : ${gitrepo:=https://github.com/ContainerSolutions/timber.git}
-
+  : ${gitrepo:? required}
+  : ${sessionSecret:=cloudnative1337}
+  
   local name=${namespace}
 
 cat <<EOF
@@ -158,7 +161,7 @@ spec:
       - args:
         - gotty
         - "-w"
-        - "-r"
+        - "--credential=user:${sessionSecret}"
         - "--title-format=${name}"
         #- tmux
         - bash
@@ -166,7 +169,7 @@ spec:
           - name: NS
             value: ${name}
           - name: TILLER_NAMESPACE
-            value: ${name}
+            value: ${name} 
           - name: NODE
             valueFrom:
               fieldRef:
@@ -181,7 +184,7 @@ spec:
         name: dev
         volumeMounts:
           - mountPath: /root/workshop
-            name: gitrepo
+            name: gitrepo 
 ---
 apiVersion: v1
 kind: Service
@@ -206,7 +209,7 @@ metadata:
     nginx.org/websocket-services: ${name}
   labels:
     user: "${namespace}"
-  name: ${name}
+  name: ${name} 
 spec:
   rules:
   - host: ${name}.${domain}
@@ -222,7 +225,7 @@ dev() {
     declare namespace=${1}
     : ${namespace:? required}
     : ${workshopNamespace:? required}
-
+    
     namespace ${namespace}
     namespace ${namespace}play
     kubectl create rolebinding crb-${namespace}-x \
@@ -230,10 +233,10 @@ dev() {
       --namespace=${namespace}play \
       --serviceaccount=${workshopNamespace}:sa-${namespace}
 
-    depl ${namespace}| kubectl create -f -
+    depl ${namespace}| kubectl create -f - 
 
     wait-for-deployment ${namespace}
-    get-url ${namespace}
+    get-url ${namespace} 
 }
 
 presenter() {
@@ -250,7 +253,7 @@ presenter-url() {
       kubectl expose deployment user0 --port 8888 --type=NodePort --name presenter
     fi
 
-   externalip=$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type == "ExternalIP")].address}')
+   externalip=$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type == "ExternalIP")].address}') 
    kubectl get svc presenter -o jsonpath="open http://${externalip}:{.spec.ports[0].nodePort}"
    echo
 }
@@ -259,21 +262,32 @@ get-url() {
     declare deployment=${1}
 
     : ${deployment:? required}
-    pod=$(kubectl get po -lrun=${deployment} -o jsonpath='{.items[0].metadata.name}')
-    rndPath=$(kubectl logs ${pod} |sed -n '/HTTP server is listening at/ s/.*:8080//p')
 
-    sessionurl=$(kubectl get deployments. ${deployment} -o jsonpath='{.metadata.annotations.sessionurl}')
-    newSessionUrl="${sessionurl%/*/}${rndPath}"
-    kubectl annotate deployments ${deployment} --overwrite sessionurl="${newSessionUrl}"
-
-    externalip=$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type == "ExternalIP")].address}')
+    sessionUrl=http://${deployment}.${domain}/
+    kubectl annotate deployments ${deployment} --overwrite sessionurl="${sessionUrl}"
+    
+    externalip=$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type == "ExternalIP")].address}') 
     nodePort=$(kubectl get svc ${deployment} -o jsonpath="{.spec.ports[0].nodePort}")
     sessionUrlNodePort="http://${externalip}:${nodePort}${rndPath}"
     kubectl annotate deployments ${deployment} --overwrite sessionurlnp=${sessionUrlNodePort}
 
     echo "open ${sessionUrlNodePort}"
-    echo "open ${newSessionUrl}"
+    echo "open ${sessionUrl}"
 
+}
+
+switchNs() {
+  actualNs=$(kubectl config view --minify -o jsonpath='{.contexts[0].context.namespace}')
+  local ns=${1:-$oldNs}
+  : ${ns:? required}
+
+  # no parameter or "-"" switches back to previous
+  if [[ "$ns" == '-' ]]; then
+    ns=${oldNs}
+  fi
+  oldNs=${actualNs}
+  echo "---> switching to: ${ns}"
+  kubectl config set-context $(kubectl config current-context ) --namespace ${ns}
 }
 
 init() {
@@ -294,6 +308,7 @@ init() {
     # prj=$(gcloud config get-value project 2>/dev/null)
     # gcloud projects add-iam-policy-binding $prj --member=$userEmail --role=roles/container.admin
 
+    ## all user can list nodes/ns
     if ! kubectl get clusterrole lister &> /dev/null; then
       kubectl create clusterrole lister \
         --verb=get,list,watch \
@@ -301,12 +316,21 @@ init() {
         kubectl label clusterrole lister user=workshop
     fi
 
+    ## all user can read a common configMap
     if ! kubectl get clusterrole common-config &> /dev/null; then
       kubectl create clusterrole common-config \
         --verb=list,get,watch \
         --resource=configmaps \
         --resource-name=common
         kubectl label clusterrole common-config user=workshop
+    fi
+
+    ## all user can get the nodeport of sshfront svc
+    if ! kubectl get clusterrole sshreader &> /dev/null; then
+      kubectl create clusterrole sshreader \
+      --resource=service \
+      --verb=list,get \
+      --resource-name=sshfront
     fi
 }
 
@@ -336,15 +360,15 @@ workshop-context() {
     return
   fi
   kubectl config view --minify --flatten > config-orig.yaml
-  kubectl create ns ${workshopNamespace}
-  cp config-orig.yaml config-workshop.yaml
+  kubectl create ns ${workshopNamespace} 
+  cp config-orig.yaml config-workshop.yaml 
   export KUBECONFIG=$PWD/config-workshop.yaml
   kubectl config set-context $(kubectl config current-context) --namespace=${workshopNamespace}
   echo "---> context set to use namespace: ${workshopNamespace}, by:"
   echo "export KUBECONFIG=$KUBECONFIG"
 }
 
-clean-user() {
+clean-user() { 
     ns=$1;
     : ${ns:?required};
 
@@ -352,12 +376,9 @@ clean-user() {
 }
 
 list-sessions() {
-  echo === unassigned sessions:
-  kubectl get deployments --all-namespaces -o custom-columns=:.metadata.name,:.metadata.annotations.sessionurlnp -l 'user'
-  echo === assigned sessions:
   kubectl get deployments \
     --all-namespaces \
-    -l ghuser \
+    -l user \
     -o custom-columns='NAME:.metadata.name,GHUSER:.metadata.labels.ghuser,URL1:.metadata.annotations.sessionurl,URL2:.metadata.annotations.sessionurlnp'
 }
 
@@ -383,22 +404,100 @@ EOF
   else
     # https://kubernetes.github.io/ingress-nginx/deploy/#gce-gke
     echo "---> create: ns,cm,sa,crole,dep"
-    kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/master/deploy/static/mandatory.yaml
-    echo "---> creates single LB"
-    kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/master/deploy/static/provider/cloud-generic.yaml
+    kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/nginx-0.26.1/deploy/static/mandatory.yaml
+    echo "---> creates single LB" 
+    kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/nginx-0.26.1/deploy/static/provider/cloud-generic.yaml
   fi
 
   ingressip=$(kubectl get svc -n ingress-nginx ingress-nginx -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
 
-  echo "---> checking DNS A record (*.${domain}) points to: $ingressip ..."
-  if [[ $(dig +short *.${domain}) == $ingressip ]] ; then
+  echo "---> checking DNS A record (*.${domain}) points to: $ingressip ..." 
+  if [[ $(dig +short "*.${domain}") == $ingressip ]] ; then 
     echo "DNS setting are ok"
-  else
+  else 
     echo "---> set external dns A record (*.${domain}) to: $ingressip"
   fi
 }
+
+
+init-sshfront() {
+  : ${workshopNamespace:? required}
+
+  kubectl apply -f https://raw.githubusercontent.com/lalyos/k8s-sshfront/master/sshfront.yaml
+  #kubectl create clusterrolebinding crb-sshfront --clusterrole=cluster-admin --serviceaccount=${workshopNamespace}:config-reader
+}
+
+
+confirm-config() {
+  [[ -e .profile ]] && source .profile || true
+
+  cat << EOF
+=== cluster config ===
+  clusterName:    ${clusterName}
+  domain:         ${domain}
+  clusterVersion: ${clusterVersion}
+  machineType:    ${machineType}
+  defPoolSize:    ${defPoolSize}
+  preemPoolSize:  ${preemPoolSize}
+  zone:           ${zone}
+EOF
+  echo "Please press <ENTER> to continue, or CTRL-C to change value in .profile"
+  read line
+}
+
+start-cluster() {
+
+  : ${clusterName:=workshop}
+  : ${domain}
+  : ${zone:=europe-west3-b}
+  : ${clusterVersion:=$(gcloud container get-server-config --zone ${zone} --format="value(validMasterVersions[0])" 2>/dev/null)}
+  : ${machineType:=n1-standard-2}
+  : ${defPoolSize:=3}
+  : ${preemPoolSize:=3}
+
+  confirm-config
+
+  gcloud beta container \
+      --project "container-solutions-workshops" \
+      clusters create "${clusterName}" \
+      --zone "${zone}" \
+      --username "admin" \
+      --cluster-version ${clusterVersion} \
+      --machine-type "${machineType}" \
+      --image-type "UBUNTU" \
+      --disk-type "pd-standard" \
+      --disk-size "100" \
+      --metadata disable-legacy-endpoints=true \
+      --scopes "https://www.googleapis.com/auth/devstorage.read_only","https://www.googleapis.com/auth/logging.write","https://www.googleapis.com/auth/monitoring","https://www.googleapis.com/auth/servicecontrol","https://www.googleapis.com/auth/service.management.readonly","https://www.googleapis.com/auth/trace.append" \
+      --num-nodes "${defPoolSize}" \
+      --enable-stackdriver-kubernetes \
+      --no-enable-ip-alias \
+      --network "projects/container-solutions-workshops/global/networks/default" \
+      --addons HorizontalPodAutoscaling \
+      --enable-autoupgrade \
+      --enable-autorepair \
+ && gcloud beta container \
+      --project "container-solutions-workshops" \
+      node-pools create "pool-1" \
+      --cluster "${clusterName}" \
+      --zone "${zone}" \
+      --node-version ${clusterVersion} \
+      --machine-type "${machineType}" \
+      --image-type "UBUNTU" \
+      --disk-type "pd-standard" \
+      --disk-size "100" \
+      --metadata disable-legacy-endpoints=true \
+      --scopes "https://www.googleapis.com/auth/devstorage.read_only","https://www.googleapis.com/auth/logging.write","https://www.googleapis.com/auth/monitoring","https://www.googleapis.com/auth/servicecontrol","https://www.googleapis.com/auth/service.management.readonly","https://www.googleapis.com/auth/trace.append" \
+      --preemptible \
+      --num-nodes "${preemPoolSize}" \
+      --no-enable-autoupgrade \
+      --enable-autorepair
+}
+
+[[ -e .profile ]] && source .profile || true
+
 main() {
   : DEBUG=1
   init
-
+  init-sshfront
 }

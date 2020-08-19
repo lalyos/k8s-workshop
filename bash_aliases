@@ -31,13 +31,13 @@ USAGE
 
 nodeports() {
   echo "===> NodePort services:"
-  k get svc -o jsonpath="{range .items[?(.spec.type == 'NodePort')]} {.metadata.name} -> http://$EXTERNAL:{.spec.ports[0].nodePort} {'\n'}{end}"
+  kubectl get svc -o jsonpath="{range .items[?(.spec.type == 'NodePort')]} {.metadata.name} -> http://$EXTERNAL:{.spec.ports[0].nodePort} {'\n'}{end}"
   echo
 }
 
 ingresses() {
   echo "===> Ingresses:"
-  k get ing -o jsonpath='{range .items[*]} http://{.spec.rules[0].host}{"\n"}{end}'
+  kubectl get ing -o jsonpath='{range .items[*]} http://{.spec.rules[0].host}{"\n"}{end}'
   echo
 }
 
@@ -86,6 +86,17 @@ zed() {
 
   zedrem -u $CM_ZED &
 }
+
+prompt() {
+  if grep promptline -q <<< "$PROMPT_COMMAND"; then
+    unset PROMPT_COMMAND
+    PS1=${PS1_ORIG:-$}
+  else
+	  PS1_ORIG="$PS1"
+    . ~/.prompt.sh
+  fi
+}
+prompt
 
 cd
 common-env &> /dev/null
