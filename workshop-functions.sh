@@ -17,7 +17,7 @@ metadata:
     user: "${namespace}"
 ---
 kind: Role
-apiVersion: rbac.authorization.k8s.io/v1beta1
+apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: role-${namespace}
   namespace: ${namespace}
@@ -46,7 +46,7 @@ rules:
   - list
 ---
 kind: RoleBinding
-apiVersion: rbac.authorization.k8s.io/v1beta1
+apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: rb-${namespace}
   namespace: ${namespace}
@@ -62,7 +62,7 @@ roleRef:
   name: role-${namespace}
 ---
 kind: RoleBinding
-apiVersion: rbac.authorization.k8s.io/v1beta1
+apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: rb-def-${namespace}
   namespace: ${namespace}
@@ -96,16 +96,16 @@ namespace() {
     : ${workshopNamespace:? required}
 
     kubectl create ns ${namespace}
-    kubectl label ns ${namespace} user=${namespace} 
+    kubectl label ns ${namespace} user=${namespace}
     assign-role-to-ns ${namespace} | kubectl create -f -
 
     kubectl create clusterrolebinding crb-${namespace} --clusterrole=lister --serviceaccount=${workshopNamespace}:sa-${namespace}
-    kubectl label clusterrolebinding crb-${namespace} user=${namespace} 
+    kubectl label clusterrolebinding crb-${namespace} user=${namespace}
     kubectl create clusterrolebinding crb-cc-${namespace} --clusterrole=common-config --serviceaccount=${workshopNamespace}:sa-${namespace}
-    kubectl label clusterrolebinding crb-cc-${namespace} user=${namespace} 
+    kubectl label clusterrolebinding crb-cc-${namespace} user=${namespace}
 
     kubectl create clusterrolebinding crb-ssh-${namespace} --clusterrole=sshreader --serviceaccount=${workshopNamespace}:sa-${namespace}
-    kubectl label clusterrolebinding crb-ssh-${namespace} user=${namespace}  
+    kubectl label clusterrolebinding crb-ssh-${namespace} user=${namespace}
 }
 
 enable-namespaces() {
@@ -116,7 +116,7 @@ enable-namespaces() {
     kubectl config set-context $(kubectl config current-context) --namespace=default
     kubectl apply -f https://raw.githubusercontent.com/lalyos/k8s-ns-admission/master/deploy-webhook-job.yaml
     kubectl config set-context $(kubectl config current-context) --namespace=${origns}
-  fi 
+  fi
   kubectl patch clusterrole lister --patch='{"rules":[{"apiGroups":[""],"resources":["nodes","namespaces"],"verbs":["*"]}]}'
 }
 
@@ -130,11 +130,11 @@ depl() {
   : ${namespace:? required}
   : ${gitrepo:? required}
   : ${sessionSecret:=cloudnative1337}
-  
+
   local name=${namespace}
 
 cat <<EOF
-apiVersion: apps/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
@@ -169,7 +169,7 @@ spec:
           - name: NS
             value: ${name}
           - name: TILLER_NAMESPACE
-            value: ${name} 
+            value: ${name}
           - name: NODE
             valueFrom:
               fieldRef:
@@ -184,7 +184,7 @@ spec:
         name: dev
         volumeMounts:
           - mountPath: /root/workshop
-            name: gitrepo 
+            name: gitrepo
 ---
 apiVersion: v1
 kind: Service
@@ -202,14 +202,14 @@ spec:
     run: ${name}
   type: NodePort
 ---
-apiVersion: extensions/v1beta1
+apiVersion: networking.k8s.io/v1beta1
 kind: Ingress
 metadata:
   annotations:
     nginx.org/websocket-services: ${name}
   labels:
     user: "${namespace}"
-  name: ${name} 
+  name: ${name}
 spec:
   rules:
   - host: ${name}.${domain}
@@ -225,7 +225,7 @@ dev() {
     declare namespace=${1}
     : ${namespace:? required}
     : ${workshopNamespace:? required}
-    
+
     namespace ${namespace}
     namespace ${namespace}play
     kubectl create rolebinding crb-${namespace}-x \
@@ -233,10 +233,10 @@ dev() {
       --namespace=${namespace}play \
       --serviceaccount=${workshopNamespace}:sa-${namespace}
 
-    depl ${namespace}| kubectl create -f - 
+    depl ${namespace}| kubectl create -f -
 
     wait-for-deployment ${namespace}
-    get-url ${namespace} 
+    get-url ${namespace}
 }
 
 presenter() {
@@ -253,7 +253,7 @@ presenter-url() {
       kubectl expose deployment user0 --port 8888 --type=NodePort --name presenter
     fi
 
-   externalip=$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type == "ExternalIP")].address}') 
+   externalip=$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type == "ExternalIP")].address}')
    kubectl get svc presenter -o jsonpath="open http://${externalip}:{.spec.ports[0].nodePort}"
    echo
 }
@@ -265,8 +265,8 @@ get-url() {
 
     sessionUrl=http://${deployment}.${domain}/
     kubectl annotate deployments ${deployment} --overwrite sessionurl="${sessionUrl}"
-    
-    externalip=$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type == "ExternalIP")].address}') 
+
+    externalip=$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type == "ExternalIP")].address}')
     nodePort=$(kubectl get svc ${deployment} -o jsonpath="{.spec.ports[0].nodePort}")
     sessionUrlNodePort="http://${externalip}:${nodePort}${rndPath}"
     kubectl annotate deployments ${deployment} --overwrite sessionurlnp=${sessionUrlNodePort}
@@ -360,15 +360,15 @@ workshop-context() {
     return
   fi
   kubectl config view --minify --flatten > config-orig.yaml
-  kubectl create ns ${workshopNamespace} 
-  cp config-orig.yaml config-workshop.yaml 
+  kubectl create ns ${workshopNamespace}
+  cp config-orig.yaml config-workshop.yaml
   export KUBECONFIG=$PWD/config-workshop.yaml
   kubectl config set-context $(kubectl config current-context) --namespace=${workshopNamespace}
   echo "---> context set to use namespace: ${workshopNamespace}, by:"
   echo "export KUBECONFIG=$KUBECONFIG"
 }
 
-clean-user() { 
+clean-user() {
     ns=$1;
     : ${ns:?required};
 
@@ -405,16 +405,16 @@ EOF
     # https://kubernetes.github.io/ingress-nginx/deploy/#gce-gke
     echo "---> create: ns,cm,sa,crole,dep"
     kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/nginx-0.26.1/deploy/static/mandatory.yaml
-    echo "---> creates single LB" 
+    echo "---> creates single LB"
     kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/nginx-0.26.1/deploy/static/provider/cloud-generic.yaml
   fi
 
   ingressip=$(kubectl get svc -n ingress-nginx ingress-nginx -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
 
-  echo "---> checking DNS A record (*.${domain}) points to: $ingressip ..." 
-  if [[ $(dig +short "*.${domain}") == $ingressip ]] ; then 
+  echo "---> checking DNS A record (*.${domain}) points to: $ingressip ..."
+  if [[ $(dig +short "*.${domain}") == $ingressip ]] ; then
     echo "DNS setting are ok"
-  else 
+  else
     echo "---> set external dns A record (*.${domain}) to: $ingressip"
   fi
 }
