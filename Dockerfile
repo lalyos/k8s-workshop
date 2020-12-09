@@ -10,8 +10,8 @@ RUN apt-get -qq update; apt-get install -y \
   unzip \
   tmux \
   vim
-
-RUN curl -LO https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl \
+ENV KCTL_VERSION=v1.16.15
+RUN curl -LO https://storage.googleapis.com/kubernetes-release/release/${KCTL_VERSION}/bin/linux/amd64/kubectl \
    && chmod +x ./kubectl \
    && mv ./kubectl /usr/local/bin/kubectl
 
@@ -27,8 +27,6 @@ RUN curl -LO https://github.com/simeji/jid/releases/download/0.7.2/jid_linux_amd
   && unzip jid_linux_amd64.zip \
   && mv jid_linux_amd64 /usr/local/bin/jid
 
-RUN curl -Lo /usr/local/bin/zedrem https://github.com/lalyos/zedrem/releases/download/latest/zedrem-linux \
-  && chmod +x /usr/local/bin/zedrem 
 RUN kubectl completion bash > /etc/bash_completion.d/kubectl
 RUN helm completion bash > /etc/bash_completion.d/helm
 ADD https://raw.githubusercontent.com/cykerway/complete-alias/master/bash_completion.sh  /etc/bash_completion.d/alias-complete
