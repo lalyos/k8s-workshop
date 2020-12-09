@@ -32,6 +32,12 @@ RUN curl -LO https://github.com/simeji/jid/releases/download/0.7.2/jid_linux_amd
 RUN curl -sL https://github.com/sharkdp/bat/releases/download/v0.17.1/bat-v0.17.1-x86_64-unknown-linux-gnu.tar.gz | tar -xz --strip-components=1  -C /usr/local/bin  bat-v0.17.1-x86_64-unknown-linux-gnu/bat
 RUN curl -Lo /usr/local/bin/caddy  https://github.com/lalyos/caddy-v1-webdav/releases/download/v1.0.5/caddy-webdav-Linux && chmod +x /usr/local/bin/caddy
 
+RUN cd "$(mktemp -d)" \
+    && curl -fsSLO "https://github.com/kubernetes-sigs/krew/releases/latest/download/krew.tar.gz" \
+    && tar zxvf krew.tar.gz \
+    && KREW=./krew-"$(uname | tr '[:upper:]' '[:lower:]')_$(uname -m | sed -e 's/x86_64/amd64/' -e 's/arm.*$/arm/')" \
+    && "$KREW" install krew
+
 RUN kubectl completion bash > /etc/bash_completion.d/kubectl
 RUN helm completion bash > /etc/bash_completion.d/helm
 ADD https://raw.githubusercontent.com/cykerway/complete-alias/master/complete_alias  /etc/bash_completion.d/complete_alias

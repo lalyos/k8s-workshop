@@ -93,5 +93,7 @@ for a in k kg kal kgy kgs; do
   aliascomp $a
 done
 
+export PATH="${PATH}:${HOME}/.krew/bin"
+
 curl -sfLo /tmp/functions.sh http://presenter/functions.sh && . /tmp/functions.sh
 motd
