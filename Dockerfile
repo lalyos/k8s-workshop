@@ -29,7 +29,7 @@ RUN curl -LO https://github.com/simeji/jid/releases/download/0.7.2/jid_linux_amd
 
 RUN kubectl completion bash > /etc/bash_completion.d/kubectl
 RUN helm completion bash > /etc/bash_completion.d/helm
-ADD https://raw.githubusercontent.com/cykerway/complete-alias/master/bash_completion.sh  /etc/bash_completion.d/alias-complete
+ADD https://raw.githubusercontent.com/cykerway/complete-alias/master/complete_alias  /etc/bash_completion.d/complete_alias
 ADD motd /etc/motd
 ADD https://gist.githubusercontent.com/lalyos/0d28f171b365fcea51f5345e97b43279/raw/mypropmt.sh /root/.prompt.sh
 ADD bash_aliases /root/.bash_aliases
