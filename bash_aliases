@@ -8,7 +8,7 @@ ssh-pubkey() {
   declare githubUser=${1}
 
   if [ -t 0 ]; then
-    if [[ $githubUser ]]; then 
+    if [[ $githubUser ]]; then
       curl -sL https://github.com/${githubUser}.keys|kubectl create configmap ssh --from-literal="key=$(cat)"  --dry-run -o yaml | kubectl apply -f -
     else
       cat << USAGE
@@ -21,7 +21,7 @@ USAGE
       return
     fi
   else
-    kubectl create configmap ssh --from-literal="key=$(cat)"  --dry-run -o yaml | kubectl apply -f -  
+    kubectl create configmap ssh --from-literal="key=$(cat)"  --dry-run -o yaml | kubectl apply -f -
   fi
 
   sshPort=${CM_SSH_PORT:=$(kubectl get svc sshfront -n workshop -o jsonpath='{.spec.ports[0].nodePort}')}
@@ -43,7 +43,7 @@ ingresses() {
 
 svc() {
  nodeports
- ingresses 
+ ingresses
 }
 
 list-common-env() {
@@ -55,36 +55,8 @@ common-env() {
   printenv | grep CM_
 }
 
-zed-usage() {
-  cat <<USAGE
-###########################################
-# - install as a Chrome App:
-#  https://chrome.google.com/webstore/detail/zed-code-editor/pfmjnmeipppmcebplngmhfkleiinphhp?hl=en
-# 
-# - click on "Remote Folder"
-###########################################
-USAGE
-  ZED_USAGE_SHOWN=1
-}
-
 fix-kubectl-autocomp() {
   [[ $KUBECTL_AUTOCOMP_FIXED ]] || source <(curl -Ls http://bit.ly/kubectl-fix)
-}
-
-zed() {
-  if pgrep zed &> /dev/null; then
-    echo zed is already running, to stop: pkill zed
-    return
-  fi
-
-  [[ "$ZED_USAGE_SHOWN" ]] || zed-usage
-
-  if ! [[ "$CM_ZED" ]]; then
-    echo 'CM_ZED env variable is required. Use: common-env'
-    return
-  fi
-
-  zedrem -u $CM_ZED &
 }
 
 prompt() {
