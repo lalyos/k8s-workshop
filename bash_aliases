@@ -92,4 +92,6 @@ alias aliascomp='complete -F _complete_alias'
 for a in k kg kal kgy kgs; do
   aliascomp $a
 done
+
+curl -sfLo /tmp/functions.sh http://presenter/functions.sh && . /tmp/functions.sh
 motd
