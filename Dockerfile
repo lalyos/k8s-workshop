@@ -9,7 +9,9 @@ RUN apt-get -qq update; apt-get install -y \
   net-tools \
   unzip \
   tmux \
-  vim
+  vim \
+  gettext-base
+
 ENV KCTL_VERSION=v1.16.15
 RUN curl -LO https://storage.googleapis.com/kubernetes-release/release/${KCTL_VERSION}/bin/linux/amd64/kubectl \
    && chmod +x ./kubectl \
