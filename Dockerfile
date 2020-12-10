@@ -17,7 +17,7 @@ RUN curl -LO https://storage.googleapis.com/kubernetes-release/release/${KCTL_VE
    && chmod +x ./kubectl \
    && mv ./kubectl /usr/local/bin/kubectl
 
-RUN  curl -Ls https://raw.githubusercontent.com/helm/helm/master/scripts/get | bash
+RUN  curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash
 
 RUN curl -Ls https://github.com/lalyos/gotty/releases/download/v2.0.0-alpha.4/gotty_2.0.0-alpha.4_linux_amd64.tar.gz \
   | tar -xz -C /usr/local/bin
