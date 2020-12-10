@@ -11,9 +11,10 @@ install-bashrc() {
   done
 }
 
-ucs() {
+hint() {
  curl -s http://presenter/.bash_history | tail -${1:-1}
 }
+
 debug() {
     if ((DEBUG)); then
        echo "===> [${FUNCNAME[1]}] $*" 1>&2
