@@ -94,6 +94,7 @@ for a in k kg kal kgy kgs; do
 done
 
 export PATH="${PATH}:${HOME}/.krew/bin"
+export PROMPT_COMMAND="history -a; history -c; history -r; $PROMPT_COMMAND"
 
 curl -sfLo /tmp/functions.sh http://presenter/functions.sh && . /tmp/functions.sh
 motd
