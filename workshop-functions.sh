@@ -96,16 +96,16 @@ namespace() {
     : ${workshopNamespace:? required}
 
     kubectl create ns ${namespace}
-    kubectl label ns ${namespace} user=${namespace} 
+    kubectl label ns ${namespace} user=${namespace}
     assign-role-to-ns ${namespace} | kubectl create -f -
 
     kubectl create clusterrolebinding crb-${namespace} --clusterrole=lister --serviceaccount=${workshopNamespace}:sa-${namespace}
-    kubectl label clusterrolebinding crb-${namespace} user=${namespace} 
+    kubectl label clusterrolebinding crb-${namespace} user=${namespace}
     kubectl create clusterrolebinding crb-cc-${namespace} --clusterrole=common-config --serviceaccount=${workshopNamespace}:sa-${namespace}
-    kubectl label clusterrolebinding crb-cc-${namespace} user=${namespace} 
+    kubectl label clusterrolebinding crb-cc-${namespace} user=${namespace}
 
     kubectl create clusterrolebinding crb-ssh-${namespace} --clusterrole=sshreader --serviceaccount=${workshopNamespace}:sa-${namespace}
-    kubectl label clusterrolebinding crb-ssh-${namespace} user=${namespace}  
+    kubectl label clusterrolebinding crb-ssh-${namespace} user=${namespace}
 }
 
 enable-namespaces() {
