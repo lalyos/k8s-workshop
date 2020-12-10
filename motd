@@ -5,6 +5,9 @@
 # available tools: curl, tmux, vim, git, jq, bash_completion, dig
 # if you are unfamiliar with vi, use micro (https://github.com/zyedidia/micro)
 #
+# *** NEW *** to use nvim k8s yaml support, at the first nvim use run
+# :CocInstall coc-yaml
+#
 # NodePort type services are availabe on $EXTERNAL ip
 # You can use ssh to connect. Run the function: ssh-pubkey.
 #
@@ -15,8 +18,9 @@
 #   svc - lists clickable NodePort services and Ingress urls
 #   k - Alias for kubectl with bash autocompletion
 #   prompt - switch on/off fancy prompt
+#   k8s-prompt - shows actual ctx/namespace in prompt
 #
 # start with:
-#   kubectl config get-contexts
+#   kubectl version --short
 #   k get no
 ################################################################################
