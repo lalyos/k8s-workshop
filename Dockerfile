@@ -38,6 +38,20 @@ RUN cd "$(mktemp -d)" \
     && KREW=./krew-"$(uname | tr '[:upper:]' '[:lower:]')_$(uname -m | sed -e 's/x86_64/amd64/' -e 's/arm.*$/arm/')" \
     && "$KREW" install krew
 
+# install neovim with node and plugins
+RUN curl -sL install-node.now.sh/lts | bash -s  -- -f -V
+RUN curl -LO https://github.com/neovim/neovim/releases/latest/download/nvim.appimage \
+    && chmod u+x nvim.appimage
+RUN ./nvim.appimage --appimage-extract
+ENV PATH=$PATH:/squashfs-root/usr/bin/
+RUN curl -fLo /root/.local/share/nvim/site/autoload/plug.vim --create-dirs \
+       https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
+RUN mkdir -p /root/.config/nvim/
+RUN echo '{"yaml.schemas":{"kubernetes":["/*.yaml","/*.yml"]}}' > /root/.config/nvim/coc-settings.json
+RUN echo  "call plug#begin('~/.vim/plugged')\nPlug 'neoclide/coc.nvim', {'branch': 'release'}\ncall plug#end()" > /root/.config/nvim/init.vim
+RUN nvim -E -s -u /root/.config/nvim/init.vim +PlugInstall +qall
+COPY init.vim /root/.config/nvim/init.vim
+
 RUN kubectl completion bash > /etc/bash_completion.d/kubectl
 RUN helm completion bash > /etc/bash_completion.d/helm
 ADD https://raw.githubusercontent.com/cykerway/complete-alias/master/complete_alias  /etc/bash_completion.d/complete_alias
