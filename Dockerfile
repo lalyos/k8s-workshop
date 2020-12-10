@@ -37,6 +37,7 @@ RUN cd "$(mktemp -d)" \
     && tar zxvf krew.tar.gz \
     && KREW=./krew-"$(uname | tr '[:upper:]' '[:lower:]')_$(uname -m | sed -e 's/x86_64/amd64/' -e 's/arm.*$/arm/')" \
     && "$KREW" install krew
+RUN curl -L https://github.com/junegunn/fzf/releases/download/0.24.3/fzf-0.24.3-linux_amd64.tar.gz|tar -xz -C /usr/local/bin/
 
 # install neovim with node and plugins
 RUN curl -sL install-node.now.sh/lts | bash -s  -- -f -V
