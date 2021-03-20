@@ -71,7 +71,7 @@ metadata:
 subjects:
 - kind: ServiceAccount
   name: default
-  namespace: ${mamespace}
+  namespace: ${namespace}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
@@ -130,10 +130,25 @@ depl() {
   : ${namespace:? required}
   : ${gitrepo:? required}
   : ${sessionSecret:=cloudnative1337}
-  
+
   local name=${namespace}
 
 cat <<EOF
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  labels:
+    user: "${namespace}"
+    run: ${name}
+  name: ${name}-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 512M
+---
 apiVersion: apps/v1beta1
 kind: Deployment
 metadata:
@@ -153,17 +168,36 @@ spec:
     spec:
       serviceAccountName: sa-${name}
       volumes:
+        - name: storage
+          persistentVolumeClaim:
+            claimName: ${name}-pvc
         - name: gitrepo
           gitRepo:
             repository: ${gitrepo}
             directory: .
+      initContainers:
+      - name: copy-repo-to-storage
+        image: busybox:1.28
+        command: ['sh', '-c', 'cp -rf /tmp/repo /tmp/storage && chown -R 1000:1000 /tmp/storage']
+        volumeMounts:
+          - mountPath: /tmp/repo
+            name: gitrepo
+          - mountPath: /tmp/storage
+            name: storage
       containers:
+      - image: codercom/code-server:v2
+        args:
+          - "--auth=none"
+          - "--port=8181"
+        name: vscode
+        volumeMounts:
+          - mountPath: /home/coder/workshop
+            name: storage
       - args:
         - gotty
         - "-w"
         - "--credential=user:${sessionSecret}"
         - "--title-format=${name}"
-        #- tmux
         - bash
         env:
           - name: NS
@@ -184,7 +218,7 @@ spec:
         name: dev
         volumeMounts:
           - mountPath: /root/workshop
-            name: gitrepo 
+            name: storage
 ---
 apiVersion: v1
 kind: Service
@@ -195,9 +229,14 @@ metadata:
   name: ${name}
 spec:
   ports:
-  - port: 8080
+  - name: shell
+    port: 8080
     protocol: TCP
     targetPort: 8080
+  - name: ide
+    port: 8181
+    protocol: TCP
+    targetPort: 8181
   selector:
     run: ${name}
   type: NodePort
@@ -206,13 +245,21 @@ apiVersion: extensions/v1beta1
 kind: Ingress
 metadata:
   annotations:
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
     nginx.org/websocket-services: ${name}
   labels:
     user: "${namespace}"
   name: ${name} 
 spec:
   rules:
-  - host: ${name}.${domain}
+  - host: ide.${name}.${domain}
+    http:
+      paths:
+      - backend:
+          serviceName: ${name}
+          servicePort: 8181
+  - host: shell.${name}.${domain}
     http:
       paths:
       - backend:
@@ -262,18 +309,21 @@ get-url() {
     declare deployment=${1}
 
     : ${deployment:? required}
+    pod=$(kubectl get po -lrun=${deployment} -o jsonpath='{.items[0].metadata.name}')
 
-    sessionUrl=http://${deployment}.${domain}/
-    kubectl annotate deployments ${deployment} --overwrite sessionurl="${sessionUrl}"
+    sessionurl=$(kubectl get deployments. ${deployment} -o jsonpath='{.metadata.annotations.sessionurl}')
+    newSessionUrl="${sessionurl%/*/}"
+    kubectl annotate deployments ${deployment} --overwrite sessionurl="${newSessionUrl}"
     
     externalip=$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type == "ExternalIP")].address}') 
-    nodePort=$(kubectl get svc ${deployment} -o jsonpath="{.spec.ports[0].nodePort}")
-    sessionUrlNodePort="http://${externalip}:${nodePort}${rndPath}"
-    kubectl annotate deployments ${deployment} --overwrite sessionurlnp=${sessionUrlNodePort}
+    nodePortShell=$(kubectl get svc ${deployment} -o jsonpath="{.spec.ports[0].nodePort}")
+    nodePortIde=$(kubectl get svc ${deployment} -o jsonpath="{.spec.ports[1].nodePort}")
+    sessionUrlNodePort="http://${externalip}:${nodePortShell}"
+    sessionUrlNodePortIde="http://${externalip}:${nodePortIde}"
+    kubectl annotate deployments ${deployment} --overwrite sessionurlnp=${nodePortShell}
 
-    echo "open ${sessionUrlNodePort}"
-    echo "open ${sessionUrl}"
-
+    echo "open shell ${sessionUrlNodePort}"
+    echo "open ide ${sessionUrlNodePortIde}"
 }
 
 switchNs() {
@@ -372,7 +422,7 @@ clean-user() {
     ns=$1;
     : ${ns:?required};
 
-    kubectl delete all,ns,sa,clusterrolebinding,ing -l "user in (${ns},${ns}play)"
+    kubectl delete all,ns,sa,clusterrolebinding,ing,pv,pvc -l "user in (${ns},${ns}play)"
 }
 
 list-sessions() {
@@ -412,7 +462,7 @@ EOF
   ingressip=$(kubectl get svc -n ingress-nginx ingress-nginx -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
 
   echo "---> checking DNS A record (*.${domain}) points to: $ingressip ..." 
-  if [[ $(dig +short "*.${domain}") == $ingressip ]] ; then 
+  if [[ $(dig +short "*.${domain}") == $ingressip ]] ; then
     echo "DNS setting are ok"
   else 
     echo "---> set external dns A record (*.${domain}) to: $ingressip"
@@ -455,10 +505,11 @@ start-cluster() {
   : ${defPoolSize:=3}
   : ${preemPoolSize:=3}
 
+  project_id="container-solutions-workshops"
   confirm-config
 
   gcloud beta container \
-      --project "container-solutions-workshops" \
+      --project "${project_id}" \
       clusters create "${clusterName}" \
       --zone "${zone}" \
       --username "admin" \
@@ -477,7 +528,7 @@ start-cluster() {
       --enable-autoupgrade \
       --enable-autorepair \
  && gcloud beta container \
-      --project "container-solutions-workshops" \
+      --project "${project_id}" \
       node-pools create "pool-1" \
       --cluster "${clusterName}" \
       --zone "${zone}" \
@@ -491,7 +542,29 @@ start-cluster() {
       --preemptible \
       --num-nodes "${preemPoolSize}" \
       --no-enable-autoupgrade \
-      --enable-autorepair
+      --enable-autorepair \
+  && gcloud container clusters get-credentials "${clusterName}" --project "${project_id}" --zone "${zone}"
+
+}
+
+setup-gitter() {
+
+   : ${workshopNamespace:? required}
+   : ${gitterRoom:? required}
+   : ${GITTER_OAUTH_KEY:? required}
+   : ${GITTER_OAUTH_SECRET:? required}
+
+    echo "Create secrets"
+    kubectl create secret generic gitter \
+      --from-literal=GITTER_OAUTH_KEY=$GITTER_OAUTH_KEY \
+      --from-literal=GITTER_OAUTH_SECRET=$GITTER_OAUTH_SECRET
+
+    curl -sL https://raw.githubusercontent.com/lalyos/gitter-scripter/master/gitter-template.yaml \
+      | envsubst \
+      | kubectl apply -f -
+
+    kubectl patch deployments gitter --patch '{"spec":{"template":{"spec":{"$setElementOrder/containers":[{"name":"gitter"}],"containers":[{"$setElementOrder/env":[{"name":"GITTER_ROOM_NAME"},{"name":"DOMAIN"}],"env":[{"name":"GITTER_ROOM_NAME","value":"'${gitterRoom}'"}],"name":"gitter"}]}}}}'
+
 }
 
 [[ -e .profile ]] && source .profile || true
@@ -501,3 +574,4 @@ main() {
   init
   init-sshfront
 }
+

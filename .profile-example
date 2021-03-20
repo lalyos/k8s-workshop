@@ -10,3 +10,7 @@ export workshopNamespace=workshop
 # export sessionSecret=cloudnative1337
 # export clusterName=workshop
 # export gitrepo=https://github.com/ContainerSolutions/timber.git
+
+## Required for gitter self-serivce portal (get them here: https://developer.gitter.im/apps/new)
+# export GITTER_OAUTH_KEY=xx
+# export GITTER_OAUTH_SECRET=xxx
