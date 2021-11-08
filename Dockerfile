@@ -1,5 +1,6 @@
-FROM ubuntu:18.04
+FROM ubuntu:20.04
 
+ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get -qq update; apt-get install -y \
   curl \
   git \
@@ -33,10 +34,10 @@ RUN curl -sL https://github.com/sharkdp/bat/releases/download/v0.17.1/bat-v0.17.
 RUN curl -Lo /usr/local/bin/caddy  https://github.com/lalyos/caddy-v1-webdav/releases/download/v1.0.5/caddy-webdav-Linux && chmod +x /usr/local/bin/caddy
 
 RUN cd "$(mktemp -d)" \
-    && curl -fsSLO "https://github.com/kubernetes-sigs/krew/releases/latest/download/krew.tar.gz" \
-    && tar zxvf krew.tar.gz \
-    && KREW=./krew-"$(uname | tr '[:upper:]' '[:lower:]')_$(uname -m | sed -e 's/x86_64/amd64/' -e 's/arm.*$/arm/')" \
-    && "$KREW" install krew
+    && KREW="krew-linux_amd64" \
+    && curl -fsSLO "https://github.com/kubernetes-sigs/krew/releases/latest/download/${KREW}.tar.gz" \
+    && tar zxvf "${KREW}.tar.gz" \
+    && ./"${KREW}" install krew
 RUN curl -L https://github.com/junegunn/fzf/releases/download/0.24.3/fzf-0.24.3-linux_amd64.tar.gz|tar -xz -C /usr/local/bin/
 
 # install neovim with node and plugins
