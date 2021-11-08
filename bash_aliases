@@ -69,6 +69,7 @@ prompt() {
   fi
 }
 prompt
+k8s-prompt
 
 cd
 common-env &> /dev/null
@@ -93,8 +94,43 @@ for a in k kg kal kgy kgs; do
   aliascomp $a
 done
 
+zz() {
+    history -p '!!' | tee $HOME/eval | tee $HOME/public/eval
+}
+
+lazy() {
+  declare desc="downloads a file from master session, and evals it"
+
+  curl -s http://presenter/eval | BASH_ENV=<(echo alias k=kubectl) bash -O expand_aliases -x
+}
+
+hint() {
+ curl -s http://presenter/.bash_history | tail -${1:-1}
+}
+
+save-functions() {
+    declare desc="saves all bash function into a file"
+    : ${WEBDAVURL:=presenter}
+
+    declare -f > $HOME/functions.sh
+    declare -f > $HOME/public/functions.sh
+
+    echo download it from http://${WEBDAVURL}/functions.sh
+}
+
+load-functions() {
+    curl -sLo /tmp/functions.sh http://presenter/functions.sh
+    . /tmp/functions.sh
+    echo "---> functions loaded ..." 1>&2
+}
+
+
 export PATH="${PATH}:${HOME}/.krew/bin"
-export PROMPT_COMMAND="history -a; history -c; history -r; $PROMPT_COMMAND"
+touch .bash_history
+export PROMPT_COMMAND="history -a; history -c; history -r; cp .bash_history public; $PROMPT_COMMAND"
+
+export KUBEVAL_SCHEMA_LOCATION=https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master
+export K8S_PROMPT=1
 
 curl -sfLo /tmp/functions.sh http://presenter/functions.sh && . /tmp/functions.sh
 motd
