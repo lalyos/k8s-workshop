@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 
-# kubectl expose deployment user0 --target-port=2015 --port 80 --name presenter
+# init-caddy-light
+# k cp ~/prj/k8s-workshop/hack.sh $(k get po -l run=user0 -ojsonpath='{.items[0].metadata.name}'):/root/
+## inside use0:
+# . hack.sh ; save-functions
+
 install-bashrc() {
   ## !!! NOTE: this should be run in workshop namespace
   ## appned this single line to the end of ~/.bashrc :
@@ -25,7 +29,8 @@ save-functions() {
     : ${WEBDAVURL:=presenter}
 
     debug $desc
-    declare -f > ${FUNCTIONS:=$HOME/functions.sh}
+    declare -f > $HOME/functions.sh
+    declare -f > $HOME/public/functions.sh
 
     echo download it from http://${WEBDAVURL}/functions.sh
 }
@@ -43,6 +48,13 @@ main() {
     debug default-command
     save-functions
   fi
+}
+
+fixdns_() {
+  cat >/etc/resolv.conf <<EOF
+search $NS.svc.cluster.local workshop.svc.cluster.local svc.cluster.local cluster.local europe-west3-b.c.cs-k8s.internal c.cs-k8s.internal google.internal
+nameserver 10.88.0.10
+EOF
 }
 
 nodeports ()
@@ -82,24 +94,29 @@ distribute-file() {
     url=http://${WEBDAVURL}${fullpath#$HOME}
     debug $url
 
+    #type envsubst &> /dev/null || apt-get install -y gettext-base
     cat > $HOME/eval <<EOF
-    type envsubst &> /dev/null || apt-get install -y gettext-base
     curl -s $url | envsubst | kubectl apply -f -
 EOF
 }
-install-bat() {
-  curl -sL https://github.com/sharkdp/bat/releases/download/v0.17.1/bat-v0.17.1-x86_64-unknown-linux-gnu.tar.gz | tar -xz --strip-components=1  -C /usr/local/bin  bat-v0.17.1-x86_64-unknown-linux-gnu/bat
+
+install-kubeval() {
+  export KUBEVAL_SCHEMA_LOCATION=https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master
+  curl -sL https://github.com/instrumenta/kubeval/releases/latest/download/kubeval-$(uname)-amd64.tar.gz | tar -C /usr/local/bin -xz kubeval
 }
 
-install-krew() {
-  [[ -e  ~/.krew/bin/ ]] || (
-  set -x; cd "$(mktemp -d)" &&
-  curl -fsSLO "https://github.com/kubernetes-sigs/krew/releases/latest/download/krew.tar.gz" &&
-  tar zxvf krew.tar.gz &&
-  KREW=./krew-"$(uname | tr '[:upper:]' '[:lower:]')_$(uname -m | sed -e 's/x86_64/amd64/' -e 's/arm.*$/arm/')" &&
-  "$KREW" install krew
-  )
-  export PATH="${KREW_ROOT:-$HOME/.krew}/bin:$PATH"
+install-k9s() {
+  curl -sL https://github.com/derailed/k9s/releases/download/v0.24.2/k9s_Linux_x86_64.tar.gz | tar -xz -C /usr/local/bin/ k9s
+
+  kubectl config set-cluster local --server https://kubernetes.default --insecure-skip-tls-verify
+  kubectl config set-credentials token --token $(cat /var/run/secrets/kubernetes.io/serviceaccount/token)
+  kubectl config set-context training --user token --cluster local --namespace $NS
+  kubectl config use-context training
+}
+
+krew-lly(){
+  kubectl krew index add lly https://github.com/lalyos/kubectl-ing \
+  ;kubectl krew install lly/ing
 }
 
 krew-examples() {
@@ -107,19 +124,17 @@ krew-examples() {
   kubectl krew install cs/examples
 }
 
-install-kubectx() {
-  [[ -e  /usr/local/bin/fzf ]] || curl -L https://github.com/junegunn/fzf/releases/download/0.24.3/fzf-0.24.3-linux_amd64.tar.gz|tar -xz -C /usr/local/bin/
-
-  [[ -e /usr/local/bin/kubectx  ]] ||  (
-      curl -L -o /usr/local/bin/kubectx https://github.com/ahmetb/kubectx/releases/download/v0.9.1/kubectx
-      chmod +x /usr/local/bin/kubectx
-  )
-
+steal() {
+  declare desc="interactively (select) steals yaml files from presenter via webdav"
+  select f in $(curl -s presenter|sed 's/<D/\n<D/g'|sed -n '/href/ s/<[^>]*>//gp'|sort|grep yaml);
+  do
+      curl presenter/${f};
+      break;
+  done
 }
 
 zz() {
-    history -p '!!' > $HOME/eval;
-    cat $HOME/eval
+    history -p '!!' | tee $HOME/eval | tee $HOME/public/eval
 }
 
 lazy() {
