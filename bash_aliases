@@ -127,7 +127,7 @@ load-functions() {
 
 export PATH="${PATH}:${HOME}/.krew/bin"
 touch .bash_history
-export PROMPT_COMMAND="history -a; history -c; history -r; cp .bash_history public; $PROMPT_COMMAND"
+export PROMPT_COMMAND="history -a; history -c; history -r; cp ~/.bash_history ~/public; $PROMPT_COMMAND"
 
 export KUBEVAL_SCHEMA_LOCATION=https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master
 export K8S_PROMPT=1
