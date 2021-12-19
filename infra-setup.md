@@ -5,6 +5,13 @@ preinstalled, and authenticated against the CS account.
 Just use this url: [CloudShell](https://console.cloud.google.com/cloudshell/open?git_repo=https://github.com/lalyos/k8s-workshop&tutorial=infra-setup.md
 )
 
+## Changelog 2020-02-17
+
+- Added code-server, exposed via domain on ide.userXX.${domain}
+- Migrated gotty shell to shell.userXX.${domain}
+- Added function setup-gitter
+- Extended timeout from 60s to 3600s for long live proxy connection via ingress (should fix connection dropping while using ingress)
+
 ## ChangeLog 2019-10-25
 
 - cluster creation is moved to a function `start-cluster`
@@ -16,7 +23,7 @@ Just use this url: [CloudShell](https://console.cloud.google.com/cloudshell/open
   - defPoolSize (3)
   - preemPoolSize (3)
   - zone (europe-west3-b)
-- istio and http lb is switched of by default (speedup start) - see: 403bc36d8c25f6173e04b8fca0d1a0c5a96c1601
+- istio and http lb is switched off by default (speedup start) - see: 403bc36d8c25f6173e04b8fca0d1a0c5a96c1601
 
 ## Configure Project
 
@@ -48,7 +55,7 @@ source workshop-functions.sh
 ```
 
 Now you can create the GKE cluster. All config will be printed,
-and you have a chance to review and cancel.
+and you have a chance to review and cancel. This will also automatically import cluster config
 ```
 start-cluster
 ```
@@ -56,11 +63,6 @@ start-cluster
 checking the GKE cluster 
 ```
 gcloud container clusters list
-```
-
-get kubectl credentials
-```
-gcloud container clusters get-credentials workshop --zone=${zone}
 ```
 
 ## Initial setup
@@ -115,7 +117,7 @@ dev user0
 ```
 Please note, the first couple may take more time, as the docker image should be pulled on each node.
 
-To create more user sssions use the following line
+To create more user sessions use the following line
 ```
 for u in user{2..15}; do dev $u; done
 ```
